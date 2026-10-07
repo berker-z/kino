@@ -1,0 +1,7 @@
+{
+  "Anton": {"package": "anton", "weights": [400]},
+  "Antonio": {"package": "antonio", "weights": [400, 700]},
+  "IBM Plex Mono": {"package": "ibm-plex-mono", "weights": [400, 500]},
+  "Inter Tight": {"package": "inter-tight", "weights": [400, 500, 600]},
+  "JetBrains Mono": {"package": "jetbrains-mono", "weights": [400, 500, 700]}
+}

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <!-- vendor/ is written by `npm run build`; assets/ is local-only (gitignored). -->
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <script src="assets/audiomap.js"></script>
+    <script src="assets/spectrum.js"></script>
+    <script src="palette.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+      .title {
+        position: absolute; left: 96px; top: 85px; margin: 0;
+        font-family: var(--k-font-display); font-weight: 400; font-size: 176px; line-height: 0.88;
+        letter-spacing: -0.005em; text-transform: uppercase; color: var(--k-fg);
+      }
+      .note {
+        position: absolute; font-family: var(--k-font-mono); font-size: 24px; line-height: 1.5;
+        letter-spacing: 0.06em; text-transform: uppercase; color: var(--k-fg); white-space: pre;
+      }
+      .note-bl { left: 96px; bottom: 75px; }
+      .note-tr { right: 96px; top: 96px; text-align: right; }
+      .rule { position: absolute; left: 96px; right: 96px; bottom: 160px; height: 1px; background: var(--k-fg); transform-origin: left; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="24" data-width="2560" data-height="1440" data-fps="60">
+      <div id="stage" class="clip" data-start="0" data-duration="24" data-track-index="0"></div>
+      <audio id="music" src="assets/track.opus" data-start="0" data-duration="24" data-track-index="1" data-timeline-role="music"></audio>
+    </div>
+    <script>
+      // Motif test: the song's own spectrum as receding ridgelines, dithered;
+      // type crisp on top. Nothing strobes: hits only move the picture.
+      const colors = Kino.signalPalettes[window.PALETTE] ?? Kino.signalPalettes.iceOnNavy;
+      const A = {
+        ...Kino.signalDither,
+        palette: { ...Kino.signalDither.palette, foreground: colors.ink, accent: colors.ink, background: colors.ground },
+      };
+      const map = Kino.beatMap(window.AUDIOMAP);
+      const spectrum = window.SPECTRUM;
+      // Rendered at the viewing screen's native size: any rescale breaks the
+      // pixel lock (see docs/primitives/spectrum-feed.md).
+      const W = 2560, H = 1440, DURATION = 24, FPS = 60;
+      const surge = map.map.key_moments.filter((k) => k.kind === "SURGE").sort((a, b) => b.delta - a.delta)[0].t;
+      const smooth = (a, b, t) => { const x = Math.min(1, Math.max(0, (t - a) / (b - a))); return x * x * (3 - 2 * x); };
+
+      const feed = Kino.spectrumFeed({
+        spectrum, beats: map.beats, duration: DURATION, fps: FPS, width: W, height: H,
+        // Peaks grow in as the beat drops.
+        amplitude: (t) => 0.05 + 0.13 * smooth(surge - 0.5, surge + 1.5, t),
+      });
+
+      function paintFrame(ctx, t) {
+        feed.paint(ctx, t);
+        return {}; // no static, no tears: empty space stays empty
+      }
+
+      Kino.whenReady(A).then(() => {
+        const tl = gsap.timeline({ paused: true });
+        const scene = document.createElement("div");
+        scene.className = "k-scene";
+        document.getElementById("stage").appendChild(scene);
+        Kino.applyAesthetic(scene, A);
+
+        Kino.ditherCanvas(scene, tl, {
+          width: W, height: H, duration: DURATION, fps: FPS,
+          ink: colors.ink, ground: colors.ground, mode: "smooth", paint: paintFrame,
+        });
+        // No scanlines here: a fixed stripe pattern beats against lines that glide.
+        Kino.crt(scene, { scanlines: 0, vignette: A.texture.vignette });
+
+        // Crisp layer.
+        const title = document.createElement("h1");
+        title.className = "title";
+        title.textContent = "The Future\nof Speech";
+        title.style.whiteSpace = "pre";
+        const rule = document.createElement("div");
+        rule.className = "rule";
+        const note = document.createElement("div");
+        note.className = "note note-bl";
+        note.textContent = `Fig. 01 — spectral history\n1 line = 1/8 note · ${feed.rows / 8} bars · ${map.bpm.toFixed(1)} bpm`;
+        const clock = document.createElement("div");
+        clock.className = "note note-tr";
+        scene.append(title, rule, note, clock);
+
+        // The title arrives on the surge, one line per beat; no flash.
+        const [b1, b2] = map.beats.filter((b) => b >= surge);
+        tl.set(title, { clipPath: "inset(0 0 100% 0)" }, 0);
+        tl.set(title, { clipPath: "inset(0 0 50% 0)" }, b1);
+        tl.set(title, { clipPath: "inset(0 0 0% 0)" }, b2);
+        Kino.fade(tl, [note, clock], { start: 1, duration: 0.6 });
+        tl.fromTo(rule, { scaleX: 0 }, { scaleX: 1, duration: 2, ease: "steps(24)" }, 0.6);
+
+        Kino.timeDriver(tl, { duration: DURATION, fps: FPS }, (t, frame) => {
+          const beat = map.beatAt(t);
+          const bar = Math.floor(Math.max(beat.index, 0) / 4) + 1;
+          clock.textContent = `${String(Math.floor(t)).padStart(2, "0")}:${String(frame % FPS).padStart(2, "0")}\nbar ${String(bar).padStart(2, "0")}`;
+        });
+
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

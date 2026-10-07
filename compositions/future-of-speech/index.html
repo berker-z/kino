@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <!-- vendor/ is written by `npm run build` at the repo root. assets/ is local-only (gitignored). -->
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <script src="assets/audiomap.js"></script>
+    <style>
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="52" data-width="1920" data-height="1080">
+      <div id="stage" class="clip" data-start="0" data-duration="52" data-track-index="0"></div>
+      <audio id="music" src="assets/track.opus" data-start="0" data-duration="52" data-track-index="1" data-timeline-role="music"></audio>
+    </div>
+    <script>
+      // Fan video for a 52s cut. Every visual is a procedural painter pushed
+      // through a 1-bit ordered dither; all timing comes from the audiomap.
+      const A = Kino.signalDither;
+      const P = Kino.paint;
+      const hash = Kino.hash;
+      const map = Kino.beatMap(window.AUDIOMAP);
+      const W = 640, H = 360, DURATION = 52, FPS = 30;
+
+      const surge = map.map.key_moments.filter((k) => k.kind === "SURGE").sort((a, b) => b.delta - a.delta)[0].t;
+      const phrases = map.map.phrases;
+      const SCENES = [
+        { name: "VOID", start: 0 },
+        { name: "TITLE", start: surge },
+        { name: "TERRAIN", start: phrases[2].start },
+        { name: "TUNNEL", start: phrases[3].start },
+        { name: "RETURN", start: phrases[4].start },
+      ].map((s, i, all) => ({ ...s, index: i, end: all[i + 1]?.start ?? DURATION }));
+      const sceneAt = (t) => SCENES.findLast((s) => s.start <= t);
+
+      const STOP = map.map.events[map.map.events.length - 1].t; // last hit before the cut ends
+      const smooth = (a, b, t) => { const x = Math.min(1, Math.max(0, (t - a) / (b - a))); return x * x * (3 - 2 * x); };
+      const step = (t, rate) => Math.floor(t * rate) / rate; // stepped motion
+
+      // Distance flown: steady cruise plus a shove on every kick.
+      const kicks = map.hits(["kick"], 0.3);
+      function travel(t, from, cruise) {
+        let d = (t - from) * cruise;
+        for (const k of kicks) if (k.t >= from && k.t <= t) d += k.energy * 1.4 * Math.min(1, (t - k.t) / 0.25);
+        return d;
+      }
+
+      // The title's words land on the first four beats after the surge.
+      const titleBeats = map.beats.filter((b) => b >= surge).slice(0, 4);
+      const TITLE = [["THE", "FUTURE"], ["OF", "SPEECH"]];
+      const split = map.beats.find((b) => b >= (surge + SCENES[2].start) / 2);
+      const FLASH_WORDS = ["SIGNAL", "NOISE", "CARRIER", "TRANSMIT", "RECEIVE", "STATIC"];
+
+      function title(ctx, t, { x, y, size, lineGap, align }) {
+        ctx.font = `700 ${size}px "Antonio"`;
+        let wordIndex = 0;
+        TITLE.forEach((line, li) => {
+          const widths = line.map((w) => ctx.measureText(w).width);
+          const space = size * 0.22;
+          const total = widths.reduce((a, b) => a + b, 0) + space * (line.length - 1);
+          let cursor = align === "center" ? x - total / 2 : x;
+          line.forEach((word, wi) => {
+            const appear = titleBeats[wordIndex++] ?? surge;
+            if (t >= appear) {
+              const jolt = t - appear < 0.1 ? (hash(wordIndex, 4) - 0.5) * 18 : 0;
+              ctx.lineWidth = 8;
+              ctx.strokeStyle = "#000";
+              ctx.textAlign = "left";
+              ctx.strokeText(word, cursor + jolt, y + li * lineGap);
+              P.displayText(ctx, word, { x: cursor + jolt, y: y + li * lineGap, size, family: "Antonio", align: "left" });
+            }
+            cursor += widths[wi] + space;
+          });
+        });
+      }
+
+      function paintFrame(ctx, t, frame) {
+        const scene = sceneAt(t);
+        const local = t - scene.start;
+        const kick = map.pulse(t, ["kick"], { decay: 0.16, minEnergy: 0.3 });
+        const snare = map.pulse(t, ["snare"], { decay: 0.12, minEnergy: 0.3 });
+        const hat = map.pulse(t, ["hihat"], { decay: 0.08 });
+        const perc = map.pulse(t, ["perc"], { decay: 0.2 });
+        const post = { bias: 0, noise: 0.03 + hat * 0.06, tears: [], invert: false };
+
+        if (scene.name === "VOID") {
+          P.starfield(ctx, { width: W, height: H, count: 260, travel: t * 0.4, brightness: 0.45 + perc * 0.6 });
+          P.sphere(ctx, { x: W / 2, y: H / 2, radius: 92, rotation: step(t, 12) * 0.3, light: -0.9 + t * 0.06, wire: 0.35 });
+          post.bias = -0.75 + 0.75 * smooth(0.8, 8.5, t);
+          post.noise += perc * 0.22 + smooth(surge - 0.8, surge, t) * 0.35;
+        }
+
+        if (scene.name === "TITLE") {
+          const late = t >= split;
+          const cx = late ? W * 0.72 : W / 2;
+          P.starburst(ctx, { x: cx, y: H / 2, rays: 150, inner: 36, outer: 250 + kick * 90, rotation: step(t, 8) * 0.06, brightness: 0.5 });
+          P.sphere(ctx, { x: cx, y: H / 2, radius: late ? 96 + kick * 10 : 30 + kick * 8, rotation: step(t, 12) * 0.4, wire: 0.6 });
+          if (late) title(ctx, t, { x: 40, y: 150, size: 92, lineGap: 96, align: "left" });
+          else title(ctx, t, { x: W / 2, y: 170, size: 104, lineGap: 104, align: "center" });
+        }
+
+        if (scene.name === "TERRAIN") {
+          P.starfield(ctx, { width: W, height: H * 0.4, count: 120, travel: t * 0.2, brightness: 0.5 });
+          P.terrain(ctx, { width: W, height: H, travel: travel(t, scene.start, 3.2), sun: 0.95, roughness: 1 + kick * 0.25 });
+        }
+
+        if (scene.name === "TUNNEL") {
+          P.tunnel(ctx, { width: W, height: H, travel: travel(t, scene.start, 4.5), sides: 6, twist: 1, brightness: 0.95 });
+          P.sphere(ctx, { x: W / 2, y: H / 2, radius: 16 + kick * 14, wire: 0 });
+          const hit = map.lastHit(t, ["snare"], 0.42);
+          if (hit && hit.t >= scene.start && hit.age < 0.14) {
+            const word = FLASH_WORDS[hit.index % FLASH_WORDS.length];
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = "#000";
+            ctx.font = '700 128px "Antonio"';
+            ctx.textAlign = "center";
+            ctx.strokeText(word, W / 2, H / 2 + 46);
+            P.displayText(ctx, word, { x: W / 2, y: H / 2 + 46, size: 128, family: "Antonio" });
+          }
+        }
+
+        if (scene.name === "RETURN") {
+          P.starburst(ctx, { x: W / 2, y: 160, rays: 220, inner: 60, outer: 330 + kick * 60, rotation: -step(t, 8) * 0.05, brightness: 0.55, seed: 4 });
+          P.sphere(ctx, { x: W / 2, y: 160, radius: 118 + kick * 10, rotation: step(t, 12) * 0.5, wire: 0.55 });
+          ctx.lineWidth = 8;
+          ctx.strokeStyle = "#000";
+          ctx.font = '700 54px "Antonio"';
+          ctx.textAlign = "center";
+          ctx.strokeText("THE FUTURE OF SPEECH", W / 2, 306);
+          P.displayText(ctx, "THE FUTURE OF SPEECH", { x: W / 2, y: 306, size: 54, family: "Antonio", tracking: 0.04 });
+          post.bias += 0.45 * smooth(49, STOP, t);
+          post.noise += smooth(47.5, STOP, t) * 0.25;
+        }
+
+        // Hard hits tear the picture for a few frames.
+        const tear = map.lastHit(t, ["kick", "snare"], 0.5);
+        if (tear && tear.age < 0.12 && t > 1) {
+          const n = 2 + Math.floor(hash(tear.index, 5) * 4);
+          for (let i = 0; i < n; i++) {
+            post.tears.push({
+              y: hash(tear.index, i, 1) * H,
+              height: 2 + hash(tear.index, i, 2) * 18,
+              shift: (hash(tear.index, i, 3) - 0.5) * 90 * tear.energy,
+            });
+          }
+        }
+
+        // Rolls and fills stutter: alternate inversion every two frames.
+        const roll = map.map.rolls.find((r) => r.start > 9 && t >= r.start && t <= r.end);
+        if (roll && Math.floor(frame / 2) % 2 === 0) post.invert = true;
+
+        // Scene cuts and energy surges flash inverted for two frames.
+        const cut = SCENES.some((s) => s.start > 0 && t >= s.start && t < s.start + 2 / FPS);
+        const surgeFlash = map.map.key_moments.some((k) => k.kind === "SURGE" && t >= k.t && t < k.t + 2 / FPS);
+        if (cut || surgeFlash) post.invert = !post.invert;
+
+        // The cut ends on a hard stop: one flash of ink, then nothing.
+        if (t >= STOP) post.bias = t < STOP + 2 / FPS ? 2 : -2;
+        return post;
+      }
+
+      const pad = (n, w = 2) => String(Math.max(0, n)).padStart(w, "0");
+      const meter = (v, n = 10) => "[" + "|".repeat(Math.round(v * n)) + ".".repeat(n - Math.round(v * n)) + "]";
+
+      Kino.whenReady(A).then(() => {
+        const tl = gsap.timeline({ paused: true });
+        const scene = document.createElement("div");
+        scene.className = "k-scene";
+        document.getElementById("stage").appendChild(scene);
+        Kino.applyAesthetic(scene, A);
+
+        Kino.ditherCanvas(scene, tl, {
+          width: W, height: H, duration: DURATION, fps: FPS,
+          ink: A.palette.foreground, ground: A.palette.background, matrix: A.texture.dither.matrix,
+          paint: paintFrame,
+        });
+        Kino.crt(scene, { scanlines: A.texture.scanlines, vignette: A.texture.vignette, phosphor: A.palette.accent });
+
+        const hud = Object.fromEntries(["tl", "tr", "bl", "br"].map((corner) => {
+          const node = document.createElement("div");
+          node.className = `k-hud k-hud-${corner}`;
+          scene.appendChild(node);
+          return [corner, node];
+        }));
+        Kino.timeDriver(tl, { duration: DURATION, fps: FPS }, (t, frame) => {
+          const on = t > 1.2 && t < STOP;
+          for (const node of Object.values(hud)) node.style.visibility = on ? "visible" : "hidden";
+          const s = sceneAt(t);
+          const beat = map.beatAt(t);
+          hud.tl.textContent = `KINO // SIGNAL\n${map.bpm.toFixed(1)} BPM`;
+          hud.tr.textContent = `T+${pad(Math.floor(t))}:${pad(frame % FPS)}\nBAR ${pad(Math.floor(Math.max(beat.index, 0) / 4) + 1)} . ${(Math.max(beat.index, 0) % 4) + 1}`;
+          hud.bl.textContent = `SCENE ${pad(s.index + 1)}/${pad(SCENES.length)}  ${s.name}\nPHASE ${map.energyAt(t).level}`;
+          hud.br.textContent = `KCK ${meter(map.pulse(t, ["kick"], { decay: 0.16 }))}\nSNR ${meter(map.pulse(t, ["snare"], { decay: 0.12 }))}`;
+        });
+
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

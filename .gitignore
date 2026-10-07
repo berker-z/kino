@@ -1,0 +1,13 @@
+renders/
+node_modules/
+.hyperframes/
+dist/
+vendor/
+audio/
+compositions/*/assets/
+examples/future-of-speech/
+examples/waves-test/
+*.mp4
+*.mov
+*.webm
+.claude/
