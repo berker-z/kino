@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NousCon Teardown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter+Tight:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --c0: #06101B; --c1: #091627; --c2: #0E2139; --c3: #183655; --c4: #234B6C; --c5: #336284;
+    --c6: #4B7D9C; --c7: #6895B0; --c8: #86AFC6; --c9: #AAC7D6; --c10: #C9DAE1; --c11: #E3EBED;
+    --bg: var(--c0); --panel: var(--c1); --line: var(--c3); --text: var(--c10); --muted: var(--c7); --accent: var(--c11);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 "Inter Tight", system-ui, sans-serif; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 0 16px; }
+  header { padding: 72px 0 40px; border-bottom: 1px solid var(--line); }
+  header .kicker { color: var(--muted); font: 500 13px "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
+  h1 { font-weight: 800; font-size: clamp(44px, 8vw, 104px); line-height: .92; margin: 14px 0 22px; letter-spacing: -.02em; color: var(--accent); }
+  header p { max-width: 760px; color: var(--c9); font-size: 18px; margin: 0 0 12px; }
+  nav { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  nav .wrap { display: flex; gap: 22px; overflow-x: auto; padding-top: 12px; padding-bottom: 12px; font: 500 13px "IBM Plex Mono", monospace; }
+  nav a { color: var(--muted); text-decoration: none; white-space: nowrap; }
+  nav a:hover { color: var(--accent); }
+  section { padding: 56px 0 24px; }
+  h2 { font-size: 34px; font-weight: 800; margin: 0 0 6px; color: var(--accent); letter-spacing: -.01em; }
+  h2 small { font: 500 13px "IBM Plex Mono", monospace; color: var(--muted); margin-left: 10px; letter-spacing: .08em; }
+  .lede { max-width: 780px; color: var(--c9); margin: 0 0 28px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+  @media (max-width: 440px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
+  .card.wide { grid-column: 1 / -1; }
+  .card.wide .body { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+  @media (max-width: 800px) { .card.wide .body { grid-template-columns: 1fr; } }
+  .media { position: relative; aspect-ratio: 16 / 9; background: var(--c2); }
+  .media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tc { position: absolute; left: 8px; top: 8px; font: 500 11px "IBM Plex Mono", monospace; background: rgba(6,16,27,.78); color: var(--c10); padding: 2px 6px; border-radius: 2px; }
+  .body { padding: 16px 18px 18px; }
+  .name { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .name h3 { margin: 0; font-size: 21px; font-weight: 800; color: var(--accent); }
+  .name code { font: 500 12px "IBM Plex Mono", monospace; color: var(--c8); }
+  .body p { margin: 8px 0 0; color: var(--c10); }
+  .kino { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 14px; color: var(--c9); }
+  .kino b { font: 500 11px "IBM Plex Mono", monospace; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-right: 6px; }
+  .tag { display: inline-block; font: 500 11px "IBM Plex Mono", monospace; padding: 1px 6px; border: 1px solid var(--c4); border-radius: 2px; color: var(--c8); }
+  .tag.yes { border-color: var(--c8); color: var(--c11); }
+  .tag.no { border-style: dashed; color: var(--c6); }
+  .swatches { display: grid; grid-template-columns: repeat(12, 1fr); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; margin: 0 0 12px; }
+  .swatches div { aspect-ratio: 1 / 1.3; display: flex; align-items: flex-end; padding: 6px; font: 500 10px "IBM Plex Mono", monospace; }
+  @media (max-width: 700px) { .swatches { grid-template-columns: repeat(6, 1fr); } }
+  .timeline { position: relative; height: 54px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; display: flex; margin: 8px 0 28px; }
+  .timeline a { display: block; height: 100%; border-right: 1px solid var(--bg); text-decoration: none; position: relative; }
+  .timeline a span { position: absolute; left: 4px; bottom: 3px; font: 500 9px "IBM Plex Mono", monospace; color: var(--c0); white-space: nowrap; overflow: hidden; max-width: calc(100% - 6px); }
+  .timeline a:hover { filter: brightness(1.25); }
+  ul.plain { margin: 6px 0 0; padding-left: 18px; color: var(--c10); }
+  ul.plain li { margin: 4px 0; }
+  footer { border-top: 1px solid var(--line); padding: 32px 0 64px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">kino · research · source: NousCon NYC teaser, 29 s, 3840×2160 @ 30</div>
+    <h1>NousCon<br>teardown</h1>
+    <p>The teaser split into the pieces it's made of. Each card loops one piece, names it, and says what it would take to make it in kino.</p>
+    <p>The short version: most of the look isn't in the pictures. Their plates are photos, AI stills and macro footage. What makes them read as one film is one treatment applied to all of it (cyanotype blue, filmed off a CRT, sun-print edges) and one cutting rhythm. We can build the treatment ourselves. The plates we'd have to bring.</p>
+  </div>
+</header>
+
+<nav><div class="wrap">
+  <a href="#treatment">01 treatment</a>
+  <a href="#type">02 type</a>
+  <a href="#transitions">03 transitions</a>
+  <a href="#plates">04 plates</a>
+  <a href="#rhythm">05 rhythm</a>
+  <a href="#steal">06 for kino</a>
+</div></nav>
+
+<main class="wrap">
+
+<section id="map">
+  <h2>Shot map <small>0 to 29.3 s, click to jump</small></h2>
+  <div class="timeline" id="timeline"></div>
+</section>
+
+<section id="treatment">
+  <h2>01 · Treatment <small>applies to every frame</small></h2>
+  <p class="lede">This is the aesthetic layer, and it's the part worth stealing first. None of it depends on what's in the picture, so it would sit on top of anything we make, ridgelines included.</p>
+
+  <div class="card wide">
+    <div class="body">
+      <div>
+        <div class="name"><h3>Prussian ramp</h3><code>cyanotype grade</code></div>
+        <p>The whole film is one hue. Twelve colors cover every frame, and they all sit on a single line from near-black navy to a cold paper white. There's no second accent color anywhere. Blacks are blue, never neutral, and highlights go slightly green-grey rather than pure white. That's the cyanotype: iron-salt prints come out exactly this Prussian blue, and the white is the paper.</p>
+        <p>Darks dominate. Most frames are mostly <span class="mono">#091627</span> to <span class="mono">#234B6C</span> with a small, very bright subject.</p>
+      </div>
+      <div>
+        <div class="swatches" id="swatches"></div>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> A gradient map: luminance in, ramp out. It's what <code>ditherCanvas</code> smooth mode already does with two stops, so it needs a multi-stop version. As a palette it's a deeper, bluer sibling of iceOnNavy, which says something about your taste.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:20px">
+    <div class="card">
+      <div class="media"><video data-src="media/crt-macro.mp4" poster="media/crt-macro.jpg" muted loop playsinline></video><span class="tc">4.30, 1:1 crop</span></div>
+      <div class="body">
+        <div class="name"><h3>Aperture grille</h3><code>CRT re-photograph</code></div>
+        <p>This is a 1:1 crop of the 4K master. The whole video was played on a Trinitron-style screen and filmed. You can see the vertical phosphor stripes on every frame, and they bend slightly where the glass curves. This isn't a scanline overlay. The stripes are vertical, they're colored, and they carry the image instead of sitting on top of it.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> A post pass on the canvas: split each column into R, G and B stripes, add a slight barrel warp, and bloom the bright parts. Our <code>crt()</code> does horizontal scanlines, which is the wrong axis for this look. It has to be rendered at the final pixel size (see lessons.md) or the stripes moiré.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="media"><video data-src="media/crt-fringe.mp4" poster="media/crt-fringe.jpg" muted loop playsinline></video><span class="tc">27.30, 1:1 crop</span></div>
+      <div class="body">
+        <div class="name"><h3>Convergence fringe</h3><code>chromatic edge</code></div>
+        <p>White type gets a magenta edge on one side and a cyan edge on the other. That's CRT misconvergence, not a glitch effect. It's subtle, a few pixels, and the only place any color other than blue appears. It also softens the type just enough that a clean grotesk stops looking digital.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> Offset the red and blue channels by 2 to 4 px at 4K, more toward the edges of the frame. Cheap, and it also works on DOM text with layered text-shadows, so type can stay crisp and still pick up the fringe.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="media"><video data-src="media/crt-focus.mp4" poster="media/crt-focus.jpg" muted loop playsinline></video><span class="tc">22.30, corner crop</span></div>
+      <div class="body">
+        <div class="name"><h3>Focus falloff</h3><code>lens, not screen</code></div>
+        <p>A camera filmed the screen, so the screen has depth of field. The grille is sharp in the middle and goes soft toward the corners, and the stripes turn into diagonal moiré where the focus drops. The physical screen edge shows up on the left as a green ladder. This is what sells the "real object" feeling more than anything else.</p>
+        <div class="kino"><b>kino</b><span class="tag">medium</span> A radial blur mask over the grille pass. Blur on canvas is slow at 4K, so this probably wants a WebGL pass (or a precomputed blurred layer crossfaded by distance from center).</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="media"><video data-src="media/plate-and-strip.mp4" poster="media/plate-and-strip.jpg" muted loop playsinline></video><span class="tc">3.60 to 5.30</span></div>
+      <div class="body">
+        <div class="name"><h3>Sun-print edge</h3><code>brushed emulsion border</code></div>
+        <p>Plates rarely fill the frame cleanly. The image ends in a ragged, brushed border, the way cyanotype emulsion is painted onto paper by hand, with paper white or deep blue past it. This frame also stacks a second plate as a strip at the side (the sparks), like two prints laid on the same table.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> A mask from thresholded fractal noise stretched along one axis gives brush-stroke edges. Seed it per plate so it's fixed, not boiling. Boiling edges would read as jitter (we learned that one already).</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="type">
+  <h2>02 · Type <small>two voices</small></h2>
+  <p class="lede">There are two type systems and they never mix. A heavy grotesk (looks like Helvetica Neue Condensed Bold / Nimbus) is projected light: white, on the screen, fringed. A high-contrast serif is a physical object: embossed, black, lying on blue felt. The sans says when and where. The serif says names.</p>
+  <div class="grid">
+    <div class="card">
+      <div class="media"><video data-src="media/letter-relay.mp4" poster="media/letter-relay.jpg" muted loop playsinline></video><span class="tc">0.00 to 3.10</span></div>
+      <div class="body">
+        <div class="name"><h3>Letter relay</h3><code>one glyph, many plates</code></div>
+        <p>N, O, U, S, one at a time, each pinned dead center while the plate behind it swaps every 4 to 6 frames. The letter flips between white-on-dark and dark-on-light with its plate, so it always reads. The word only assembles at the end. It turns a four-letter name into three seconds of opening.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> A text component that takes a word, a plate list and a beat grid: one letter per beat, plate swaps on the subdivisions, ink inverted per plate luminance. Strong candidate for the first new component.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/plate-title.mp4" poster="media/plate-title.jpg" muted loop playsinline></video><span class="tc">7.40 to 8.50</span></div>
+      <div class="body">
+        <div class="name"><h3>Plate title</h3><code>sans over image</code></div>
+        <p>NYC, then OCTOBER 30, huge and centered over the Brooklyn Bridge. No box, no shadow, no animation on the letters themselves. The plate moves behind them; the type just holds. Contrast comes from choosing a dark part of the plate.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">have it</span> Basically our crisp DOM title. The difference is that theirs gets the grille and fringe. Ours sits above the effect stack, which is the rule we set (don't dither text). Worth testing a version where type goes under the grille but over the grade.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/overspray-nyc.mp4" poster="media/overspray-nyc.jpg" muted loop playsinline></video><span class="tc">13.95 to 14.80</span></div>
+      <div class="body">
+        <div class="name"><h3>Overspray stencil</h3><code>type as spray paint</code></div>
+        <p>The letters arrive as stencil spray: a solid core, a speckled halo, and a burst of overspray that eats outward. The same move ends the intro on NOUS (2.70). It's the one place the type gets dirty, and it's always dark ink on paper.</p>
+        <div class="kino"><b>kino</b><span class="tag">medium</span> Render the word to a canvas, then dilate it into a particle halo whose radius animates. This is "dithering text", which you vetoed, but it's on purpose and for one beat, so I'd try it once before ruling it out.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/overspray-stencil.mp4" poster="media/overspray-stencil.jpg" muted loop playsinline></video><span class="tc">2.70 to 3.20</span></div>
+      <div class="body">
+        <div class="name"><h3>Stencil settle</h3><code>NOUS lands</code></div>
+        <p>The intro ends here: the four relayed letters become one word, sprayed on paper. Grey first, then black, then the splatter. Short enough that it reads as an impact, not an effect.</p>
+        <div class="kino"><b>kino</b><span class="tag">medium</span> Same primitive as above, run in reverse from blown-out to clean.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/felt-type.mp4" poster="media/felt-type.jpg" muted loop playsinline></video><span class="tc">15.80 to 17.02</span></div>
+      <div class="body">
+        <div class="name"><h3>Felt type + droplet</h3><code>embossed serif, traveling lens</code></div>
+        <p>NOUSCON as glossy black serif letters lying on blue felt, while a water droplet slides across and magnifies whatever is under it. Shallow focus, a hot specular glint. It's the most tactile shot in the film, and it's how the serif voice always appears.</p>
+        <div class="kino"><b>kino</b><span class="tag">hard</span> The felt and emboss could be faked with a normal map and lighting in WebGL. Honestly this one is easier to shoot or generate as a plate and keep only the droplet as code (a moving refraction lens over any layer).</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/felt-nous.mp4" poster="media/felt-nous.jpg" muted loop playsinline></video><span class="tc">21.90 to 23.50</span></div>
+      <div class="body">
+        <div class="name"><h3>Felt type, light bar</h3><code>NOUS under a stripe of light</code></div>
+        <p>Same object, now with a horizontal band of light behind the word and the droplet parked on the O. The light band does the job a title card's backing box would do.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/felt-hermes.mp4" poster="media/felt-hermes.jpg" muted loop playsinline></video><span class="tc">24.00 to 25.23</span></div>
+      <div class="body">
+        <div class="name"><h3>Felt type, liquid plinth</h3><code>HERMES</code></div>
+        <p>HERMES (their agent product) sitting in a pool of white liquid, which makes it look cast. Same serif, same felt. The series of three felt shots is a recurring motif: whenever a proper name appears, it's this object.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/lockup.mp4" poster="media/lockup.jpg" muted loop playsinline></video><span class="tc">27.10 to 29.29</span></div>
+      <div class="body">
+        <div class="name"><h3>Lockup</h3><code>end card</code></div>
+        <p>NOUSCON in the sans, centered over the skyline reflected in water. The longest hold in the film (two seconds) and the calmest. It earns the stillness by being the only shot that gets to sit.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="transitions">
+  <h2>03 · Transitions <small>almost all physical</small></h2>
+  <p class="lede">There are no slides, wipes or zooms in the software sense. Shots change by hard cut, or by something that looks like it happened to the print: tearing, water, light.</p>
+  <div class="grid">
+    <div class="card">
+      <div class="media"><video data-src="media/torn-print.mp4" poster="media/torn-print.jpg" muted loop playsinline></video><span class="tc">0.80 to 1.70</span></div>
+      <div class="body">
+        <div class="name"><h3>Torn print</h3><code>paper-tear wipe</code></div>
+        <p>The next plate shows through a ragged tear in the current one. Also an organic blob mask (the grey shape around the O at 1.1) that looks like a cutout laid on top. Cut-paper collage, done fast.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> A <code>maskReveal</code> whose mask edge is a noise-displaced line with a thin white paper fringe. Fits our existing <code>wipe</code> as a new edge style.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/ripple-lens.mp4" poster="media/ripple-lens.jpg" muted loop playsinline></video><span class="tc">3.10 to 3.70</span></div>
+      <div class="body">
+        <div class="name"><h3>Ripple</h3><code>water-drop transition</code></div>
+        <p>Concentric rings, like a drop hitting water, fill the frame and the next shot resolves out of them. It's used three times, and every time it means "going deeper".</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> A radial displacement shader with decaying rings. Could be a pure canvas painter too: our ridgelines code is already most of the way to concentric line art.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/lens-title.mp4" poster="media/lens-title.jpg" muted loop playsinline></video><span class="tc">18.20 to 19.45</span></div>
+      <div class="body">
+        <div class="name"><h3>Lens pass</h3><code>a glass orb carries the word</code></div>
+        <p>A tiny figure walks through a light streak, then a glass lens swims in carrying "US", then "NOUSCO". The word is seen through refraction, so you assemble it yourself. Same idea as the letter relay, done with optics.</p>
+        <div class="kino"><b>kino</b><span class="tag">medium</span> A circular refraction lens (barrel distortion inside a circle, plus a rim highlight) that can move over any layer. Shares code with the droplet.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/ripple-skyline.mp4" poster="media/ripple-skyline.jpg" muted loop playsinline></video><span class="tc">26.00 to 27.00</span></div>
+      <div class="body">
+        <div class="name"><h3>Collage stutter</h3><code>pre-ending scramble</code></div>
+        <p>Right before the lockup, a burst of cuts every 1 to 2 frames: ripple, skyline, torn paper, white. The only chaotic second in the film, and it's placed to make the final hold feel still. Note it's not a flash. Bright plates come through, but nothing inverts.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> A plate scheduler that cuts on the 16th-note grid for a bar. <code>beatTicks</code> with subdivision 4 already gives the times.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/chip-smash.mp4" poster="media/chip-smash.jpg" muted loop playsinline></video><span class="tc">5.30 to 7.00</span></div>
+      <div class="body">
+        <div class="name"><h3>Light smash</h3><code>white-out between shots</code></div>
+        <p>A beam of light streaks diagonally across a chip and blows the frame to paper white for about 10 frames. This is the closest they get to a flash. It works better than a strobe because the white comes from something in the shot (the beam), and it goes to paper, not to pure screen white.</p>
+        <div class="kino"><b>kino</b><span class="tag">careful</span> You hated our flashes. The difference is motivation and color: one diagonal light source, once, to the paper tone. If we ever do one, that's the rule.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="plates">
+  <h2>04 · Plates <small>the imagery</small></h2>
+  <p class="lede">The recurring subjects: hands, chips, New York, light, organic radial growth, and heads. Read together it's a story about people, machines and the city, which is why it holds together with very little text. These are all source images; the treatment is what we'd add.</p>
+  <div class="grid">
+    <div class="card">
+      <div class="media"><video data-src="media/hands-chip.mp4" poster="media/hands-chip.jpg" muted loop playsinline></video><span class="tc">9.47 to 10.72</span></div>
+      <div class="body">
+        <div class="name"><h3>Offering</h3><code>hands around a chip</code></div>
+        <p>Two hands cradle a chip whose traces grow out like roots. Centered, symmetric, almost religious. Hands appear twice (also reaching for the ring at 3.6), always as the human half of human plus machine.</p>
+        <div class="kino"><b>kino</b><span class="tag no">plate</span> Source image. The trace growth could be code: a drawn path animating along circuit lines.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/node-tree.mp4" poster="media/node-tree.jpg" muted loop playsinline></video><span class="tc">19.47 to 21.03</span></div>
+      <div class="body">
+        <div class="name"><h3>Constellation tree</h3><code>neural net as a plant</code></div>
+        <p>Glowing nodes joined by dotted lines, growing upward and branching like a tree, then blooming into soft halos. A network diagram made organic.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> Fully procedural: an L-system or seeded branching graph, nodes revealed along the beat, glow from blur. This is the most "kino" plate in the film and a good second motif next to the ridgelines.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/radial-bloom.mp4" poster="media/radial-bloom.jpg" muted loop playsinline></video><span class="tc">11.90 to 12.95</span></div>
+      <div class="body">
+        <div class="name"><h3>Radial bloom</h3><code>dandelion / crystal burst</code></div>
+        <p>Thousands of fine fibers radiating from a center, slowly turning. Also appears as the sparks in the side strip at 3.6. Fine, dense, calm.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> Our <code>starburst</code> painter is a crude version. It needs thousands of thin, slightly curved strands with varying length. Same thin-line pixel lessons apply.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/rack-focus.mp4" poster="media/rack-focus.jpg" muted loop playsinline></video><span class="tc">10.73 to 11.90</span></div>
+      <div class="body">
+        <div class="name"><h3>Rack focus</h3><code>Empire State through haze</code></div>
+        <p>The skyline out of focus, slowly pulling toward sharp, never quite getting there. A held breath between busier shots.</p>
+        <div class="kino"><b>kino</b><span class="tag">medium</span> An animated blur on any plate. Works on our own visuals too.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/tunnel-rush.mp4" poster="media/tunnel-rush.jpg" muted loop playsinline></video><span class="tc">8.45 to 9.45</span></div>
+      <div class="body">
+        <div class="name"><h3>Platform rush</h3><code>subway, motion blur</code></div>
+        <p>A train platform with strip lights smearing past. Speed without a camera move: the motion is in the plate.</p>
+        <div class="kino"><b>kino</b><span class="tag no">plate</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/light-streak.mp4" poster="media/light-streak.jpg" muted loop playsinline></video><span class="tc">14.80 to 15.80</span></div>
+      <div class="body">
+        <div class="name"><h3>Light trails</h3><code>long exposure diagonal</code></div>
+        <p>Headlight streaks running corner to corner across a black frame. Mostly black, which resets the eye after the bright stencil shot before it.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> Procedural: streaks along a perspective path, drawn as thin lines with additive blending.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/echo-walker.mp4" poster="media/echo-walker.jpg" muted loop playsinline></video><span class="tc">7.00 to 7.42</span></div>
+      <div class="body">
+        <div class="name"><h3>Echo walker</h3><code>slit-scan trail</code></div>
+        <p>A silhouette walking into light, leaving a stuttered trail of copies behind. Under half a second.</p>
+        <div class="kino"><b>kino</b><span class="tag">medium</span> Needs footage, but the trail is code: keep the last N frames of a layer and stack them offset.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/wired-head.mp4" poster="media/wired-head.jpg" muted loop playsinline></video><span class="tc">17.03 to 17.70</span></div>
+      <div class="body">
+        <div class="name"><h3>Wired head</h3><code>bust with tendrils</code></div>
+        <p>A blank face with wires or light threads lifting off the scalp. The machine-mind image, kept abstract.</p>
+        <div class="kino"><b>kino</b><span class="tag no">plate</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/emblem.mp4" poster="media/emblem.jpg" muted loop playsinline></video><span class="tc">21.03 to 21.90</span></div>
+      <div class="body">
+        <div class="name"><h3>Emblem</h3><code>caduceus, painted</code></div>
+        <p>Hermes' staff, brushed in ink on blotchy paper, with wings as two loose strokes. A symbol drawn by hand rather than placed as a logo.</p>
+        <div class="kino"><b>kino</b><span class="tag">medium</span> An SVG path drawn on with a brush-textured stroke. Our <code>maskReveal</code> plus a rough stroke filter.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/collage.mp4" poster="media/collage.jpg" muted loop playsinline></video><span class="tc">25.23 to 26.07</span></div>
+      <div class="body">
+        <div class="name"><h3>Cut-out collage</h3><code>masks and scraps</code></div>
+        <p>Torn pieces, a hockey-mask face, HERMES half covered. Several plates layered as if pasted on a board.</p>
+        <div class="kino"><b>kino</b><span class="tag">medium</span> A layout of masked plates with torn-paper edges, each nudged on the beat.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="media"><video data-src="media/skyline-title.mp4" poster="media/skyline-title.jpg" muted loop playsinline></video><span class="tc">12.95 to 13.95</span></div>
+      <div class="body">
+        <div class="name"><h3>Bubble over skyline</h3><code>OCTOBER 30, second time</code></div>
+        <p>The date again, now over the waterfront with a soap-bubble arc sweeping across. Repeating the date with a new plate is how the film keeps the information in front of you without a lower third.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="rhythm">
+  <h2>05 · Rhythm <small>the cutting</small></h2>
+  <p class="lede">The film is structured by shot length more than by any effect.</p>
+  <div class="card wide">
+    <div class="media" style="aspect-ratio:auto"><video data-src="media/intro-rhythm.mp4" poster="media/intro-rhythm.jpg" muted loop playsinline style="aspect-ratio:16/9"></video><span class="tc">0.00 to 8.50</span></div>
+    <div class="body">
+      <div>
+        <div class="name"><h3>Fast in, slow middle, still out</h3></div>
+        <ul class="plain">
+          <li><b>0 to 3 s:</b> cuts every 4 to 8 frames (about every 0.15 to 0.25 s). The letter relay.</li>
+          <li><b>3 to 8 s:</b> shots of 0.5 to 1.7 s. The world gets introduced.</li>
+          <li><b>8 to 26 s:</b> steady 0.8 to 1.6 s per shot. One idea per shot, roughly one shot per bar.</li>
+          <li><b>26 to 27 s:</b> a one-second scramble, cuts every 1 to 2 frames.</li>
+          <li><b>27 to 29 s:</b> the lockup holds for two seconds.</li>
+        </ul>
+      </div>
+      <div>
+        <p>Inside each shot the camera barely moves. Motion comes from the subject (light, water, growth) or from a slow push. Nothing bounces, nothing overshoots, nothing eases in a way you'd notice. It's the same thing we found with the ridgelines: calm, constant motion reads as expensive.</p>
+        <div class="kino"><b>kino</b><span class="tag yes">buildable</span> A scene archetype: a cut list generated from the beat grid with a density curve (fast, steady, scramble, hold), so the edit itself is beat-synced instead of hand-timed.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="steal">
+  <h2>06 · What I'd take into kino</h2>
+  <p class="lede">In order of how much look per hour of work.</p>
+  <div class="card wide"><div class="body">
+    <div>
+      <ul class="plain">
+        <li><b>A <code>cyanotype</code> aesthetic:</b> the 12-stop Prussian ramp as a gradient map, paper-white highlights, blue blacks.</li>
+        <li><b>A <code>trinitron</code> effect:</b> vertical RGB grille, slight barrel, convergence fringe, focus falloff toward the corners. Replaces the horizontal-scanline <code>crt</code> for this look.</li>
+        <li><b><code>sunprintEdge</code>:</b> seeded brushed-emulsion masks for plates.</li>
+        <li><b><code>letterRelay</code>:</b> one glyph per beat over swapping plates.</li>
+      </ul>
+    </div>
+    <div>
+      <ul class="plain">
+        <li><b><code>tornWipe</code> and <code>ripple</code>:</b> the two physical transitions.</li>
+        <li><b>A <code>constellation</code> painter:</b> the growing node tree, our own second motif.</li>
+        <li><b>A <code>cutList</code> scheduler:</b> shot lengths from the beat grid with a density curve.</li>
+        <li><b>Plates:</b> the one thing code can't make. Photos, generated stills or footage go in <code>assets/</code> and get the treatment.</li>
+      </ul>
+      <p>First test I'd suggest: the ridgelines render we already have, pushed through cyanotype + trinitron + sun-print edge. If that looks like it belongs in this film, the treatment is portable and the rest is plates and cutting.</p>
+    </div>
+  </div></div>
+</section>
+
+</main>
+
+<footer><div class="wrap">
+  Clips cut with <code>research/nouscon/cut.sh</code> from the source file. The media folder is gitignored; this page and the script are the only things meant for the repo.
+</div></footer>
+
+<script>
+  const ramp = ["#06101B","#091627","#0E2139","#183655","#234B6C","#336284","#4B7D9C","#6895B0","#86AFC6","#AAC7D6","#C9DAE1","#E3EBED"];
+  const sw = document.getElementById("swatches");
+  ramp.forEach((c, i) => {
+    const d = document.createElement("div");
+    d.style.background = c;
+    d.style.color = i < 6 ? ramp[10] : ramp[0];
+    d.textContent = c.slice(1);
+    sw.appendChild(d);
+  });
+
+  // Shot map: [start, end, label, anchor]
+  const shots = [
+    [0, 3.1, "letter relay", "type"], [3.1, 3.6, "ripple", "transitions"], [3.6, 5.3, "ring + strip", "treatment"],
+    [5.3, 7.0, "chip smash", "transitions"], [7.0, 7.4, "walker", "plates"], [7.4, 8.45, "NYC / OCT 30", "type"],
+    [8.45, 9.47, "platform", "plates"], [9.47, 10.73, "hands", "plates"], [10.73, 11.9, "rack focus", "plates"],
+    [11.9, 12.95, "bloom", "plates"], [12.95, 13.97, "OCT 30", "plates"], [13.97, 14.8, "NYC spray", "type"],
+    [14.8, 15.8, "trails", "plates"], [15.8, 17.03, "felt", "type"], [17.03, 17.7, "head", "plates"],
+    [17.7, 19.47, "lens pass", "transitions"], [19.47, 21.03, "tree", "plates"], [21.03, 21.9, "emblem", "plates"],
+    [21.9, 23.5, "felt NOUS", "type"], [23.5, 24.0, "beam", "transitions"], [24.0, 25.23, "HERMES", "type"],
+    [25.23, 26.07, "collage", "plates"], [26.07, 27.1, "scramble", "transitions"], [27.1, 29.29, "lockup", "type"],
+  ];
+  const tl = document.getElementById("timeline");
+  shots.forEach(([a, b, label, href], i) => {
+    const el = document.createElement("a");
+    el.href = "#" + href;
+    el.style.width = ((b - a) / 29.29 * 100) + "%";
+    el.style.background = ramp[[6, 8, 9, 7][i % 4]];
+    el.title = `${a.toFixed(2)}–${b.toFixed(2)} s · ${label}`;
+    el.innerHTML = `<span>${label}</span>`;
+    tl.appendChild(el);
+  });
+
+  // Load and play clips only while they're on screen.
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      const v = e.target;
+      if (e.isIntersecting) {
+        if (!v.src) v.src = v.dataset.src;
+        v.play().catch(() => {});
+      } else {
+        v.pause();
+      }
+    }
+  }, {rootMargin: "200px"});
+  document.querySelectorAll("video[data-src]").forEach((v) => io.observe(v));
+</script>
+</body>
+</html>

@@ -248,6 +248,7 @@ export function ridgelines(
     roughness = 0,
     rowKeys,
     lineWidth = 1,
+    ground = "#000",
   }: {
     width: number;
     height: number;
@@ -290,6 +291,8 @@ export function ridgelines(
     /** Stable id per row (e.g. its source frame), used to seed the wobble. */
     rowKeys?: readonly number[];
     lineWidth?: number;
+    /** Fill under each row, hiding the rows behind it. Match the background. */
+    ground?: string;
   },
 ): void {
   const count = rows.length;
@@ -337,7 +340,7 @@ export function ridgelines(
     body.lineTo(x0 + span, height);
     body.lineTo(x0, height);
     body.closePath();
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = ground;
     ctx.fill(body);
     // Distance (in rows) from the exit, measured on the scrolled position.
     const toExit = count - 1 - (k + scroll);

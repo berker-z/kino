@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screen Treatment Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter+Tight:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #06101B; --panel: #091627; --line: #183655; --text: #C9DAE1; --muted: #6895B0; --accent: #E3EBED; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 "Inter Tight", system-ui, sans-serif; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 0 16px; }
+  header { padding: 56px 0 28px; border-bottom: 1px solid var(--line); }
+  .kicker { color: var(--muted); font: 500 13px "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
+  h1 { font-weight: 800; font-size: clamp(40px, 7vw, 84px); line-height: .95; margin: 12px 0 18px; color: var(--accent); }
+  header p { max-width: 800px; color: #AAC7D6; margin: 0 0 10px; }
+  code, .mono { font-family: "IBM Plex Mono", monospace; font-size: .9em; color: #86AFC6; }
+  section { padding: 40px 0 10px; border-bottom: 1px solid var(--line); }
+  h2 { font-size: 28px; font-weight: 800; margin: 0 0 4px; color: var(--accent); }
+  h2 small { font: 500 13px "IBM Plex Mono", monospace; color: var(--muted); margin-left: 8px; }
+  .note { max-width: 860px; color: #AAC7D6; margin: 6px 0 18px; }
+  .note b { color: var(--accent); font-weight: 600; }
+  .tabs { display: flex; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
+  .tabs button { font: 500 12px "IBM Plex Mono", monospace; background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 5px 10px; border-radius: 2px; cursor: pointer; }
+  .tabs button.on { color: var(--bg); background: #AAC7D6; border-color: #AAC7D6; }
+  .quad { position: relative; border: 1px solid var(--line); }
+  .quad img { display: block; width: 100%; height: auto; image-rendering: auto; }
+  .quad.pixel img { image-rendering: pixelated; }
+  .quad span { position: absolute; font: 500 12px "IBM Plex Mono", monospace; background: rgba(6,16,27,.85); color: var(--accent); padding: 3px 8px; border-radius: 2px; }
+  .quad span.ref { background: #E3EBED; color: #06101B; }
+  .q1 { left: 8px; top: 8px; } .q2 { left: calc(50% + 8px); top: 8px; } .q3 { left: 8px; top: calc(50% + 8px); } .q4 { left: calc(50% + 8px); top: calc(50% + 8px); }
+  table { border-collapse: collapse; font: 13px "IBM Plex Mono", monospace; margin: 8px 0 18px; width: 100%; max-width: 860px; }
+  td, th { border-bottom: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th { color: var(--muted); font-weight: 500; }
+  td:first-child, th:first-child { text-align: left; }
+  tr.ref td { color: var(--accent); }
+  tr.best td { color: #9BE3C4; }
+  .table-wrap { overflow-x: auto; }
+  footer { padding: 28px 0 60px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="kicker">kino · research · screenPass lab</div>
+  <h1>Faking the<br>Trinitron</h1>
+  <p>You were right: it's synthetic. Three things in the 4K master give it away. The stripes are in phase across R, G and B (a real aperture grille puts the three colors side by side). The grade is a single luminance-to-color curve with almost no scatter. And the focus falls off only toward the left and right edges; the top stays sharp.</p>
+  <p>So the treatment is a shader, <code>Kino.screenPass</code>. Every image below has the <b>reference in the top left</b> and three tries (A, B, C) in the other quadrants. The inputs are grayscale plates I made from their frames (stripes blurred out, grade inverted), so the comparison is like for like. The plates are a bit softer than their originals, so ignore small differences in letter sharpness.</p>
+  <p>Numbers are local stripe contrast (std of a high-pass) in a few regions, theirs vs ours. They're what I tuned against; your eye is the actual judge.</p>
+</div></header>
+
+<main class="wrap" id="rounds"></main>
+
+<footer><div class="wrap">
+  Frames come from <code>compositions/cyanotype-lab</code>, rendered at 3840×2160 to match the reference. Images are local only (<code>research/*/media/</code> is gitignored).
+</div></footer>
+
+<script>
+  const rounds = [
+    {
+      n: 1, title: "First shader",
+      note: "Grade plus a plain cosine grille that only darkens. <b>Bugs:</b> the picture is upside down (texture flip), and the grille darkens everything by about 20%. A is grade + grille, B adds the camera (bend, side blur, fringe), C is everything stronger.",
+      views: ["text", "felt", "full"],
+    },
+    {
+      n: 2, title: "Mean-preserving grille",
+      note: "The grille now ripples around the original brightness instead of darkening. Brightness matched. <b>New bug:</b> I shifted the green channel for the fringe by ~5 px, which is half a stripe, so the whole grille went green and magenta. Look at the zoom.",
+      views: ["zoom", "text", "felt", "full"],
+    },
+    {
+      n: 3, title: "Fringe on the picture only",
+      note: "The fringe now offsets the picture, not the stripes, which stay in phase like the reference. Stripes fade toward white so bright type reads solid. Stripes measured too strong (34 vs 23).",
+      views: ["zoom", "text", "felt", "full"],
+    },
+    {
+      n: 4, title: "Narrow gaps",
+      note: "Their bright areas are wide bright bands with thin dark lines, not a smooth wave, so the gap is now a sharp cubic. <b>B hits the numbers within ~10% everywhere.</b> But zoomed in it reads as rows of dots, because I put the beading in the gaps.",
+      views: ["zoom", "text", "felt", "full"],
+    },
+    {
+      n: 5, title: "Beads in the stripes",
+      note: "Beads moved into the bright stripes, gaps continuous. Closer in structure, but the gaps are now hard, too-perfect lines.",
+      views: ["zoom", "text", "felt", "full"],
+    },
+    {
+      n: 6, title: "Soft lens",
+      note: "A base blur everywhere (2 to 3 px at 4K), so the grille softens the way a lens would. Text is the closest yet, especially B. <b>Still missing:</b> the fine woven speckle you see in their zoom. The softness blurs my beads away, so the next step is to put that surface texture on after the blur.",
+      views: ["zoom", "text", "felt", "full"],
+    },
+  ];
+  const stats = {
+    // center x / y, felt-top x, edge x (left), glyph x, dark x
+    ref: [23.0, 9.6, 21.0, 5.4, 11.7, 3.1],
+    4: { A: [27.3, 11.1, 27.6, 4.6, 14.2, 3.4], B: [21.9, 9.2, 22.0, 4.1, 12.1, 2.8], C: [33.1, 17.7, 32.9, 4.9, 16.1, 3.9] },
+    5: { A: [29.3, 5.8, 29.2, 7.3, 14.8, 3.7], B: [29.2, 4.9, 29.0, 7.2, 14.7, 3.7], C: [33.9, 8.3, 34.0, 8.4, 16.6, 4.7] },
+    6: { A: [25.6, 3.9, 25.2, 4.3, 12.7, 3.4], B: [23.2, 3.1, 22.8, 3.7, 11.5, 3.1], C: [27.7, 4.4, 27.4, 4.8, 13.3, 4.2] },
+  };
+  const viewName = { zoom: "zoom 16×", text: "white type", felt: "felt type", full: "full frame" };
+  const root = document.getElementById("rounds");
+  for (const r of rounds.slice().reverse()) {
+    const sec = document.createElement("section");
+    let html = `<h2>Round ${r.n} <small>${r.title}</small></h2><p class="note">${r.note}</p>`;
+    if (stats[r.n]) {
+      const rows = [["ref", stats.ref], ...Object.entries(stats[r.n])];
+      const best = r.n === 4 || r.n === 6 ? "B" : null;
+      html += `<div class="table-wrap"><table><tr><th></th><th>center stripes</th><th>center beads</th><th>felt stripes</th><th>edge stripes</th><th>white glyph</th><th>dark bg</th></tr>` +
+        rows.map(([k, v]) => `<tr class="${k === "ref" ? "ref" : k === best ? "best" : ""}"><td>${k}</td>${v.map((x) => `<td>${x.toFixed(1)}</td>`).join("")}</tr>`).join("") +
+        `</table></div>`;
+    }
+    html += `<div class="tabs">${r.views.map((v, i) => `<button data-v="${v}" class="${i === 0 ? "on" : ""}">${viewName[v]}</button>`).join("")}</div>`;
+    html += `<div class="quad ${r.views[0] === "zoom" ? "pixel" : ""}"><img src="media/lab/r${r.n}_${r.views[0]}.jpg" alt=""><span class="q1 ref">reference</span><span class="q2">A</span><span class="q3">B</span><span class="q4">C</span></div>`;
+    sec.innerHTML = html;
+    const img = sec.querySelector("img");
+    const quad = sec.querySelector(".quad");
+    sec.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => {
+      sec.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+      img.src = `media/lab/r${r.n}_${b.dataset.v}.jpg`;
+      quad.classList.toggle("pixel", b.dataset.v === "zoom");
+    }));
+    root.appendChild(sec);
+  }
+</script>
+</body>
+</html>

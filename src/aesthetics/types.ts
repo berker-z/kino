@@ -1,3 +1,5 @@
+import type {ScreenLook} from "../effects/screen-pass";
+
 // An aesthetic is a motion grammar, not a theme: besides palette and type it
 // decides how things enter, leave, and where they sit. Scenes read these
 // fields instead of hardcoding a look. Add fields only when a component needs
@@ -65,5 +67,7 @@ export type MotionAesthetic = {
     dither?: {cell: number; matrix: 4 | 8};
     /** 0–1 CRT scanline strength. */
     scanlines?: number;
+    /** Settings for screenPass (grade ramp, grille, lens). Spread into its options. */
+    screen?: ScreenLook;
   };
 };

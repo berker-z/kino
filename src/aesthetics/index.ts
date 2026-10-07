@@ -1,12 +1,13 @@
 import {brutalistEditorial} from "./brutalist-editorial";
+import {cyanotype} from "./cyanotype";
 import {nordTerminal} from "./nord-terminal";
 import {signalDither} from "./signal-dither";
 import type {MotionAesthetic} from "./types";
 
-export {brutalistEditorial, nordTerminal, signalDither};
+export {brutalistEditorial, cyanotype, nordTerminal, signalDither};
 export type {MotionAesthetic};
 
-export const aesthetics = {brutalistEditorial, nordTerminal, signalDither} as const;
+export const aesthetics = {brutalistEditorial, cyanotype, nordTerminal, signalDither} as const;
 export type AestheticName = keyof typeof aesthetics;
 
 /** Writes an aesthetic onto an element as CSS custom properties + data attributes. */

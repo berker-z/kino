@@ -51,6 +51,8 @@ export type SpectrumFeedOptions = {
   lineWidth?: number;
   /** Rows over which the oldest lines dissolve. */
   fadeOldest?: number;
+  /** Fill under each line; match the background (black under screenPass). */
+  ground?: string;
 };
 
 export type SpectrumFeed = {
@@ -83,6 +85,7 @@ export function spectrumFeed(options: SpectrumFeedOptions): SpectrumFeed {
     mirror = false,
     lineWidth = 3,
     fadeOldest = 10,
+    ground = "#000",
   } = options;
 
   const ticks = beatTicks(beats, {subdivision, until: duration});
@@ -141,6 +144,7 @@ export function spectrumFeed(options: SpectrumFeedOptions): SpectrumFeed {
       rowStep,
       fadeOldest,
       lineWidth,
+      ground,
     });
   }
 

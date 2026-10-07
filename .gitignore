@@ -10,4 +10,6 @@ examples/waves-test/
 *.mp4
 *.mov
 *.webm
-.claude/
+.claude/*
+!.claude/skills/
+research/*/media/

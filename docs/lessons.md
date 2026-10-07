@@ -18,6 +18,10 @@ Things we learned the hard way building the first scenes. Read this before writi
 
 **Spectrum frames are at the spectrum's frame rate, not the video's.** `scripts/spectrum.py` writes rows at `spectrum.fps` (30 by default). Converting a time to a spectrum row with the composition's fps (60) reads audio from twice the actual time. This happened, and the result still looked fine, which is why it's written down.
 
+**WebGL needs Chrome to not see Wayland.** Under a Wayland session headless Chrome asks SwiftShader for a Wayland Vulkan surface, fails, and WebGL comes up null: the canvas renders black. The dotfiles hyperframes wrapper unsets `WAYLAND_DISPLAY` for Chrome; until it's switched in, run `env -u WAYLAND_DISPLAY hyperframes ...`.
+
+**Don't pipe a render through `tail`.** It hides the progress bar until the end and then nobody knows how far along it is.
+
 ## Thin lines and pixels
 
 Moving fine line art is where most of the time went. The short version:
@@ -37,3 +41,7 @@ So for line art: draw antialiased (`ditherCanvas` `mode: "smooth"`), keep spacin
 - No random static or speckle in empty space.
 - Fewer ideas done properly beat many effects. Every scene should be about something.
 - Calm motion reads better than busy motion. When something feels jittery, slow it down and remove detail before adding anything.
+- Something has to move in every shot. Hard cuts between still full-bleed images read as "no motion, no effects, no layouts", even with a great treatment. Constant-speed pushes, sliding strips, growing graphs, layouts with more than one thing in them.
+- Transitions should feel physical: a sheet sliding in, a torn print, a glass lens. The water-drop ripple was the one he didn't like.
+- Whole words and lines, wiped in on beats. Not one letter per beat.
+- To prove a look, run it on new material in a short piece with music. Matching the reference's own frames convinces nobody.

@@ -6,17 +6,20 @@ A motion design library for HyperFrames: aesthetics, motion primitives, effects,
 
 ```
 src/                 TypeScript library, bundled to window.Kino
-  aesthetics/        MotionAesthetic objects (brutalistEditorial, nordTerminal, signalDither + signalPalettes)
+  aesthetics/        MotionAesthetic objects (brutalistEditorial, nordTerminal, signalDither + signalPalettes, cyanotype)
   motion/            fade, slide, stagger, maskReveal, wipe, typewriter, blink
-  effects/           grain, grid, vignette, crt, ditherCanvas (1-bit/smooth canvas renderer)
-  visuals/           grayscale painters (sphere, starburst, terrain, tunnel, starfield, ridgelines) and spectrumFeed
-  components/        animatedText, heroTitle
+  effects/           grain, grid, vignette, crt, ditherCanvas (1-bit/smooth canvas renderer), screenPass (WebGL ramp/grille/lens pass)
+  visuals/           grayscale painters (sphere, starburst, terrain, tunnel, starfield, ridgelines), spectrumFeed, networkTree, printStrip
+  plates/            preparePlate (photo -> print-ready grayscale), sunprint (brushed emulsion edge)
+  transitions/       tornWipe, lensPass (canvas scenes)
+  components/        animatedText, heroTitle, canvas type (wipeText, caption, haloInk)
   scenes/            heroReveal
   audio/             beatMap, beatTicks, tickAt (read side of audiomap.json)
   runtime/           whenReady (CSS + fonts), timeDriver (seek-safe per-frame callback), getGsap
 scripts/build.mjs    bundles src/ and copies kino.js, gsap, fonts into every compositions/*/vendor/
 scripts/spectrum.py  per-frame spectrum of an audio file -> JSON or window.<NAME> JS
 compositions/        each is a standalone HyperFrames project (index.html + assets/)
+research/            teardowns of reference videos (index.html report + scripts; media/ is gitignored)
 docs/                lessons.md, primitives/*.md
 examples/            rendered outputs (gitignored where they contain music)
 ```
@@ -30,6 +33,8 @@ hyperframes check             # lint + runtime + layout + contrast; fix everythi
 hyperframes snapshot --at 1,5,9 --output /tmp/...   # segfaults on exit after writing; harmless
 hyperframes render --quality delivery --output ../../examples/<name>/<file>.mp4
 ```
+
+Compositions using screenPass need WebGL: run `env -u WAYLAND_DISPLAY hyperframes ...` until the dotfiles wrapper that unsets it is switched in. To learn a look from someone else's video, use the `teardown` skill.
 
 `hyperframes` is the Nix-packaged CLI (pinned in ~/dotfiles), wired to a local chrome-headless-shell and FFmpeg. Don't use `npx hyperframes`. Python with librosa is on PATH for audio analysis.
 
