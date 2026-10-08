@@ -1,6 +1,6 @@
 import css from "../styles/kino.css";
 import fonts from "../tokens/fonts.json";
-import type {MotionAesthetic} from "../aesthetics";
+import type {MotionAesthetic} from "../looks";
 
 let injected = false;
 

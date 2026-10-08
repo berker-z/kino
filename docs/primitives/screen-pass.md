@@ -34,6 +34,16 @@ It mimics a camera filming a screen. The picture is graded, the screen has a gri
 
 The numbers in `cyanotype.texture.screen` are absolute px for a 2560×1440 render. They came out of six lab rounds against their 4K master (`compositions/cyanotype-lab`), with try B of round 6 scaled down.
 
+## Other uses
+
+The same pass covers more than cyanotype:
+
+- **Print, not screen:** `pitch: 0, fringe: 0, curve: 0`, keeping just the ramp, a little softness for ink bleed, and grain. `compositions/blueprint` does this with a blueprint ramp.
+- **Phosphor tube:** `pitch: 0`, `curveY` for a bulge in both axes, heavy `bloom`, an amber ramp, and the picture painted with additive light. `compositions/oscilloscope`.
+- **Colour TV:** `colorMode: true` keeps the source colours instead of mapping to a ramp, so colour artwork (teletext) goes through the grille, curvature and fringe untouched. `compositions/teletext`.
+
+With `curveY` the picture bends off the glass at the edges, and anything outside goes black. That's the tube's edge, so leave room for it.
+
 ## The canvas pieces
 
 **`preparePlate(img, {width, height})`** turns a photo into a plate: grayscale, cover-fit, stretched from the 2nd to the 98th percentile, then blended 60% toward an S-curve. Print looks want plates that are mostly near-black and near-paper, and daylight photos are the opposite. It also returns `meanIn(w, h, y)` for choosing ink.

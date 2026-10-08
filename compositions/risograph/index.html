@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <!-- assets/ (plates, track, beat map, spectrum) is local only. Plate credits: assets/plates/CREDITS.txt -->
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <script src="assets/audiomap.js"></script>
+    <script src="assets/spectrum.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="27" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="27" data-track-index="0"></div>
+      <audio id="music" src="assets/track.opus" data-start="0" data-duration="27" data-track-index="1" data-timeline-role="music"></audio>
+    </div>
+    <script>
+      // Risograph, take two: one print run, never a new page. The zine is a
+      // single tall sheet coming off the drum at a constant 11 px per frame.
+      // The two inks live on their own layers: pink drifts out of register
+      // during each bar and snaps back into it on every downbeat, so the
+      // composed image locks once a bar and then comes apart again. The bass
+      // swells halftone shapes through dot size. (A per-beat sideways lurch of
+      // the blue drum was tried and read as jitter: no instant position jumps.) risoPass prints each frame: halftone at 15° / 75°, uneven
+      // ink, pink over blue going purple.
+      const W = 2560, H = 1440, DURATION = 27, FPS = 30;
+      const map = Kino.beatMap(window.AUDIOMAP);
+      const spectrum = window.SPECTRUM;
+      const b = (i) => map.beats[i];
+      const beat = b(1) - b(0);
+      const bar = (n) => b(2 + 4 * n);
+      const clamp = (x, a = 0, c = 1) => Math.min(c, Math.max(a, x));
+      const prog = (t, at, dur) => clamp((t - at) / dur);
+      const bassAt = (t) => Kino.bandEnergy(spectrum, t, 0, 8);
+
+      // ---- the run (Kino.printRun, Kino.registerDrift) -------------------------------
+      // The sheet comes off the drum at a constant 11 px/frame (whole pixels,
+      // so nothing crawls) and eases to a stop on the last bars. The pink drum
+      // swings out of register across each bar and lands back on the downbeat;
+      // alternate bars swing the other way; locked for the ending.
+      const T_STOP = bar(7);
+      const scrollAt = Kino.printRun({ fps: FPS, pxPerFrame: 11, start: -160, stopAt: T_STOP, ease: 2.2 });
+      const SHEET = scrollAt(DURATION) + H; // total sheet length
+      const drift = Kino.registerDrift({ bars: Array.from({ length: 10 }, (_, n) => bar(n)), until: T_STOP });
+
+      const names = ["crowd", "dish", "hands", "microphone", "mouth", "switchboard", "tower", "typewriter", "waves"];
+      const loaded = names.map((name) => {
+        const img = new Image();
+        img.src = `assets/plates/${name}.jpg`;
+        return img.decode().then(() => [name, img]);
+      });
+
+      // Separations are white-on-black: white prints.
+      function type(ctx, text, x, y, size, { family = "Anton", weight = 400, align = "left", tracking = 0 } = {}) {
+        ctx.save();
+        ctx.font = `${weight} ${size}px "${family}"`;
+        ctx.letterSpacing = `${tracking}px`;
+        ctx.textAlign = align;
+        ctx.fillStyle = "#fff";
+        ctx.fillText(text, x, y);
+        ctx.restore();
+      }
+      const mono = (ctx, text, x, y, opts = {}) => type(ctx, text, x, y, opts.size ?? 32, { family: "IBM Plex Mono", weight: 500, tracking: 3, ...opts });
+      function bubble(ctx, x, y, w, h, s, { fill = false, line = 16, tail = 1 } = {}) {
+        if (s <= 0) return;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(s, s);
+        const path = new Path2D();
+        path.roundRect(-w / 2, -h / 2, w, h, h / 2);
+        path.moveTo(tail * w * 0.12, h / 2 - 4);
+        path.lineTo(tail * w * 0.3, h / 2 + h * 0.42);
+        path.lineTo(tail * w * 0.28, h / 2 - 4);
+        ctx.fillStyle = ctx.strokeStyle = "#fff";
+        ctx.lineWidth = line;
+        ctx.lineJoin = "round";
+        if (fill) ctx.fill(path); else ctx.stroke(path);
+        ctx.restore();
+      }
+      // A halftone blob: density falls off from the centre, so the screen
+      // turns it into dots that grow toward the middle. Swells with the bass.
+      function blob(ctx, x, y, r, strength = 1) {
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, `rgba(255,255,255,${strength})`);
+        g.addColorStop(0.55, `rgba(255,255,255,${strength * 0.55})`);
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      Promise.all([document.fonts.load('400 200px "Anton"'), document.fonts.load('500 30px "IBM Plex Mono"'), ...loaded]).then(([, , ...pairs]) => {
+        // Plates become blue separations: dark in the photo = ink.
+        const sep = Object.fromEntries(pairs.map(([name, img]) => {
+          const plate = Kino.preparePlate(img, { width: 1280, height: 720, contrast: 0.7 });
+          const c = document.createElement("canvas");
+          c.width = plate.width; c.height = plate.height;
+          const g = c.getContext("2d");
+          g.filter = "invert(1)";
+          g.drawImage(plate, 0, 0);
+          return [name, c];
+        }));
+        const cover = (ctx, src, x, y, w, h, z = 1, fx = 0.5, fy = 0.5) => {
+          const s = Math.max(w / src.width, h / src.height) * z;
+          ctx.save();
+          ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+          ctx.drawImage(src, x + (w - src.width * s) * fx, y + (h - src.height * s) * fy, src.width * s, src.height * s);
+          ctx.restore();
+        };
+
+        // ---- the sheet, top to bottom. Each section draws its blue and pink
+        // parts at sheet y = top; pink parts are designed to sit exactly on
+        // the blue ones when in register. --------------------------------------------
+        const sections = [
+          { top: 0, h: 1500, draw(A, B, t, y) {
+            mono(B, "KINO PRESS", 120, y + 130, { size: 34 });
+            mono(B, "NO. 03   OCTOBER 2026   ONE LONG PRINT RUN", W - 120, y + 130, { size: 34, align: "right" });
+            B.fillStyle = "#fff"; B.fillRect(120, y + 160, W - 240, 8);
+            blob(A, 1840, y + 760, 640 + 120 * bassAt(t), 0.9);
+            bubble(A, 1840, y + 720, 1100, 640, 1, { line: 22 });
+            type(B, "THE", 120, y + 520, 330);
+            type(B, "FUTURE", 120, y + 850, 330);
+            type(A, "OF SPEECH", 120, y + 1180, 330);
+            mono(B, "A FAN ZINE THAT NEVER TURNS A PAGE", 120, y + 1320, { size: 34 });
+          } },
+          { top: 1500, h: 1500, draw(A, B, t, y) {
+            cover(B, sep.mouth, 1000, y, 1560, 1300, 1.05, 0.4, 0.5);
+            A.fillStyle = "#fff";
+            A.fillRect(1000, y + 980, 1560, 150);
+            const spots = [[1480, 330, 520, 220, -1], [2160, 520, 440, 190, 1], [1700, 760, 380, 170, -1], [2260, 200, 300, 140, 1]];
+            spots.forEach(([x, by, w, h, tail], i) => bubble(A, x, y + by, w, h, 0.92 + 0.12 * bassAt(t - i * 0.08), { fill: i % 2 === 0, tail }));
+            type(B, "02", 120, y + 330, 220);
+            ["A RECORDING IS A VOICE", "THAT OUTLIVES THE ROOM.", "", "A SIGNAL IS A VOICE", "THAT OUTRUNS THE BODY.", "", "SPEECH, CARRIED."]
+              .forEach((l, i) => mono(B, l, 120, y + 560 + i * 62, { size: 40 }));
+            mono(A, "VOICE / SINGER, VIENNA", 1040, y + 1075, { size: 36 });
+          } },
+          { top: 3000, h: 1250, draw(A, B, t, y) {
+            ["switchboard", "typewriter", "tower"].forEach((n, i) => {
+              const x = 120 + i * 790;
+              cover(B, sep[n], x, y + 100, 740, 470, 1.1);
+              A.strokeStyle = "#fff"; A.lineWidth = 6; A.strokeRect(x - 14, y + 86, 768, 498);
+              mono(B, `0${i + 1}   ${n.toUpperCase()}`, x, y + 620, { size: 30 });
+            });
+            ["crowd", "dish", "hands"].forEach((n, i) => {
+              const x = 120 + i * 790;
+              cover(B, sep[n], x, y + 760, 740, 470, 1.1);
+              A.strokeStyle = "#fff"; A.lineWidth = 6; A.strokeRect(x - 14, y + 746, 768, 498);
+            });
+            // Marquee band: slides sideways at its own constant speed.
+            A.fillStyle = "#fff";
+            A.fillRect(0, y + 640, W, 100);
+            A.save();
+            A.globalCompositeOperation = "destination-out";
+            A.font = '400 84px "Anton"';
+            const text = "THE FUTURE OF SPEECH  ✶  ";
+            const tw = A.measureText(text).width;
+            const off = -((Math.round(t * FPS) * 6) % tw);
+            for (let x = off; x < W; x += tw) { A.fillStyle = "#000"; A.fillText(text, x, y + 720); }
+            A.restore();
+          } },
+          { top: 4250, h: 1300, draw(A, B, t, y) {
+            // Blue rows sit still on the sheet; pink rows slide against them.
+            for (let r = 0; r < 6; r++) {
+              const ctx = r % 2 ? A : B;
+              ctx.save();
+              ctx.font = '400 280px "Anton"';
+              const word = "SPEECH ";
+              const tw = ctx.measureText(word).width;
+              const off = r % 2 ? -((Math.round(t * FPS) * (5 + r)) % tw) : (r * 211) % tw;
+              ctx.fillStyle = "#fff";
+              for (let x = off - tw; x < W + tw; x += tw) ctx.fillText(word, x, y + 250 + r * 190);
+              ctx.restore();
+            }
+          } },
+          { top: 5550, h: 1350, draw(A, B, t, y) {
+            cover(B, sep.microphone, 0, y, 1500, 1350, 1.1, 0.3, 0.5);
+            // Rings leaving the microphone, one per beat, at constant speed.
+            const cx = 1150, cy = y + 560;
+            A.save();
+            A.beginPath(); A.rect(0, y, W, 1350); A.clip();
+            A.strokeStyle = "#fff";
+            const now = Math.floor((t - b(0)) / beat);
+            for (let k = -6; k <= 0; k++) {
+              const age = t - (b(0) + (now + k) * beat);
+              const r = 120 + age * 520;
+              if (age < 0 || r > 1900) continue;
+              A.lineWidth = 34 * Math.max(0.15, 1 - r / 1900);
+              A.beginPath();
+              A.arc(cx, cy, r, -0.7, 0.7);
+              A.stroke();
+            }
+            A.restore();
+            type(B, "05", W - 120, y + 330, 220, { align: "right" });
+            mono(B, "EVERY WORD LEAVES AT", W - 120, y + 520, { size: 40, align: "right" });
+            mono(B, "343 METRES A SECOND.", W - 120, y + 582, { size: 40, align: "right" });
+          } },
+          { top: 6900, h: 3000, draw(A, B, t, y) {
+            // Framed by the scroll's resting position at the end.
+            const cy = SHEET - H / 2;
+            blob(A, W / 2, cy, 880 + 140 * bassAt(t), 1);
+            type(B, "THE FUTURE", W / 2, cy - 30, 330, { align: "center" });
+            type(B, "OF SPEECH", W / 2, cy + 300, 330, { align: "center" });
+            mono(A, "FIN.", W / 2, cy + 440, { size: 44, align: "center" });
+            mono(B, "PRINTED IN TWO COLOURS, IN ONE RUN, ON A KINO RISO", W / 2, cy + 560, { size: 30, align: "center" });
+          } },
+        ];
+
+        // Registration marks in the margins, printed by both drums: the pink
+        // one swings off its blue twin and lands back on it every bar.
+        function marks(A, B, s) {
+          for (let my = Math.floor(s / 900) * 900; my < s + H + 900; my += 900) {
+            for (const ctx of [A, B]) {
+              ctx.save();
+              ctx.strokeStyle = "#fff"; ctx.lineWidth = 4;
+              for (const mx of [56, W - 56]) {
+                ctx.beginPath(); ctx.arc(mx, my, 22, 0, Math.PI * 2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(mx - 38, my); ctx.lineTo(mx + 38, my); ctx.moveTo(mx, my - 38); ctx.lineTo(mx, my + 38); ctx.stroke();
+              }
+              ctx.restore();
+            }
+          }
+        }
+
+        function paint(A, B, t) {
+          const s = scrollAt(t);
+          const d = drift(t);
+          // Blue: the sheet. Pink: the sheet plus its drift.
+          B.save(); B.translate(0, -s);
+          A.save(); A.translate(d.x, -s + d.y);
+          marks(A, B, s);
+          for (const sec of sections) {
+            if (sec.top > s + H + 300 || sec.top + sec.h < s - 300) continue;
+            sec.draw(A, B, t, sec.top);
+          }
+          A.restore(); B.restore();
+        }
+
+        const tl = gsap.timeline({ paused: true });
+        Kino.risoPass(document.getElementById("stage"), tl, {
+          width: W, height: H, duration: DURATION, fps: FPS, paint,
+          ...Kino.riso.texture.riso,
+        });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

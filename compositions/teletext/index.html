@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <!-- assets/ (plates, track, beat map, spectrum) is local only. Plate credits: assets/plates/CREDITS.txt -->
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <script src="assets/audiomap.js"></script>
+    <script src="assets/spectrum.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="27" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="27" data-track-index="0"></div>
+      <audio id="music" src="assets/track.opus" data-start="0" data-duration="27" data-track-index="1" data-timeline-role="music"></audio>
+    </div>
+    <script>
+      // Teletext: a 1980s broadcast text service for "The Future of Speech".
+      // A 40 x 25 grid of cells, eight colours, characters as chunky pixels
+      // and 2 x 3 block mosaics for pictures. Pages load the way they did: the
+      // header's page number rolls while the set searches, then the new page
+      // paints in row by row. Stretched to 16:9 the way widescreen sets
+      // stretched it, and shown on a curved TV through screenPass in colour mode.
+      const W = 2560, H = 1440, DURATION = 27, FPS = 30;
+      const COLS = 40, ROWS = 25, CW = 64, CH = 56, TOP = 20;
+      const map = Kino.beatMap(window.AUDIOMAP);
+      const spectrum = window.SPECTRUM;
+      const b = (i) => map.beats[i];
+      const beat = b(1) - b(0);
+      const bar = (n) => b(2 + 4 * n);
+      const clamp = (x, a = 0, c = 1) => Math.min(c, Math.max(a, x));
+      const C = { k: "#000000", r: "#FF0000", g: "#00FF00", y: "#FFFF00", b: "#0000FF", m: "#FF00FF", c: "#00FFFF", w: "#FFFFFF" };
+
+      // ---- the renderer (Kino.teletext): page model, glyphs, mosaics ------------
+      const { blankPage, text, fill, mosaic, drawPage } = Kino.teletext({ cols: COLS, rows: ROWS, cellWidth: CW, cellHeight: CH, top: TOP });
+
+      // ---- sources -------------------------------------------------------------------------
+      const names = ["dish", "mouth"];
+      const loaded = names.map((name) => {
+        const img = new Image();
+        img.src = `assets/plates/${name}.jpg`;
+        return img.decode().then(() => [name, img]);
+      });
+      // Sixel bitmaps: plates (ordered-dithered, panned) and the KINO masthead.
+      const sixels = Kino.sixels;
+      const logoBits = () => Kino.sixelText("KINO", 76, 21);
+
+      Promise.all([Kino.whenReady(Kino.teletextTV), document.fonts.load('700 13px "JetBrains Mono"'), document.fonts.load('400 24px "Anton"'), ...loaded]).then(([, , , ...pairs]) => {
+        // Plates at the screen's aspect, then squeezed into the sixel grid.
+        const plates = Object.fromEntries(pairs.map(([name, img]) => [name, Kino.preparePlate(img, { width: 640, height: 294, contrast: 0.7 })]));
+        const logo = logoBits();
+
+        const clock = (t) => `00:00:${String(Math.floor(t)).padStart(2, "0")}`;
+        function header(pg, num, t, searching = false) {
+          text(pg, 0, 0, ` P${num}`, C.w);
+          text(pg, 7, 0, "KINO 100", C.c);
+          text(pg, 17, 0, "Thu 08 Oct", C.w);
+          text(pg, 31, 0, clock(t), C.y);
+          if (searching) pg[0][1].fg = pg[0][2].fg = pg[0][3].fg = pg[0][4].fg = C.g;
+        }
+        function fastext(pg) {
+          text(pg, 0, 24, "SIGNAL", C.r);
+          text(pg, 10, 24, "SPECTRUM", C.g);
+          text(pg, 21, 24, "SUBTITLES", C.y);
+          text(pg, 33, 24, "INDEX", C.c);
+        }
+
+        // ---- pages ----------------------------------------------------------------------
+        function index(t, final = false) {
+          const pg = blankPage();
+          header(pg, final ? 199 : 100, t);
+          fill(pg, 0, 2, COLS, 4, C.b);
+          text(pg, 2, 3, "THE FUTURE OF SPEECH", C.y, C.b, true);
+          mosaic(pg, 1, 7, 38, 7, logo, () => C.c);
+          if (!final) {
+            const items = [["SIGNAL", "101", C.r], ["SPECTRUM", "102", C.g], ["SUBTITLES", "888", C.y], ["CREDITS", "199", C.c]];
+            items.forEach(([name, num, col], i) => {
+              if (t < b(i)) return;
+              text(pg, 4, 15 + i * 2, name.padEnd(26, "."), C.w);
+              text(pg, 31, 15 + i * 2, num, col);
+            });
+          } else {
+            const lines = [["MUSIC", "THE FUTURE OF SPEECH"], ["PICTURES", "WIKIMEDIA COMMONS"], ["MADE WITH", "KINO + HYPERFRAMES"], ["BY", "BERKER-Z, 2026"]];
+            lines.forEach(([k, v], i) => {
+              if (t < bar(7) + beat * (1 + i * 0.5)) return;
+              text(pg, 3, 15 + i * 2, k, C.c);
+              text(pg, 14, 15 + i * 2, v, C.w);
+            });
+            text(pg, 13, 22, "PAGE 199 1/1", C.y);
+          }
+          fastext(pg);
+          return pg;
+        }
+        function signal(t) {
+          const pg = blankPage();
+          header(pg, 101, t);
+          text(pg, 1, 1, "SIGNAL", C.y, null, true);
+          text(pg, 24, 1, "RECEIVER", C.c);
+          text(pg, 24, 2, "FIG. 1 OF 1", C.w);
+          // The picture pans one sixel per beat: teletext can't scroll
+          // smoothly, so it steps, on the beat.
+          const k = Math.max(0, Math.floor((t - bar(1)) / beat));
+          const bits = sixels(plates.dish, 80, 60, k * 1.5, 0, 1.25);
+          mosaic(pg, 0, 3, 40, 20, bits, (v) => (v > 0.7 ? C.w : v > 0.4 ? C.c : C.b));
+          text(pg, 1, 23, "32 M DISH, LISTENING SINCE 1961", C.w);
+          fastext(pg);
+          return pg;
+        }
+        const peaks = new Float32Array(20);
+        function spectrumPage(t) {
+          const pg = blankPage();
+          header(pg, 102, t);
+          text(pg, 1, 1, "SPECTRUM", C.y, null, true);
+          text(pg, 24, 1, "LIVE FROM", C.w);
+          text(pg, 24, 2, `THE TRACK ${map.bpm.toFixed(1)}`, C.c);
+          const f = spectrum.frames[Math.round(t * spectrum.fps)] ?? [];
+          const levels = Array.from({ length: 20 }, (_, i) => {
+            let s = 0;
+            for (let k = 0; k < 4; k++) s += f[Math.floor(i * 4.2) + k] ?? 0;
+            return clamp(Math.pow(s / 4, 1.3) * 1.1);
+          });
+          const rows = 18, sh = rows * 3;
+          // Peak hold: fall back slowly from the highest recent level.
+          const peak = (i) => {
+            let p = 0;
+            for (let d = 0; d < 20; d++) {
+              const fr = spectrum.frames[Math.round((t - d / 30) * spectrum.fps)] ?? [];
+              let s = 0;
+              for (let k = 0; k < 4; k++) s += fr[Math.floor(i * 4.2) + k] ?? 0;
+              p = Math.max(p, clamp(Math.pow(s / 4, 1.3) * 1.1) - d * 0.012);
+            }
+            return p;
+          };
+          const bits = (x, y) => {
+            const i = Math.floor(x / 4);
+            if (x % 4 === 3) return 0;
+            const h = sh - y;
+            if (Math.abs(h - Math.round(peak(i) * sh)) < 1) return 1;
+            return h <= levels[i] * sh ? 1 : 0;
+          };
+          mosaic(pg, 0, 4, 40, rows, bits, () => C.w);
+          // Colour by height, like a hi-fi meter: blue, cyan, yellow, red.
+          for (let r = 0; r < rows; r++) for (let c = 0; c < COLS; c++) {
+            const cell = pg[4 + r][c];
+            if (cell.mos > 0) cell.fg = r < 3 ? C.r : r < 7 ? C.y : r < 12 ? C.c : C.b;
+          }
+          text(pg, 1, 23, "30 HZ", C.w);
+          text(pg, 33, 23, "14 KHZ", C.w);
+          fastext(pg);
+          return pg;
+        }
+        const subs = ["[ MUSIC ]", "♪ THE FUTURE ♪", "♪ OF SPEECH ♪", "[ VOICES ]"];
+        function subtitles(t) {
+          const pg = blankPage();
+          header(pg, 888, t);
+          const bits = sixels(plates.mouth, 80, 66, 0, 0, 1);
+          mosaic(pg, 0, 1, 40, 22, bits, (v) => (v > 0.65 ? C.w : C.b));
+          const k = clamp(Math.floor((t - bar(5)) / (beat * 2)), 0, subs.length - 1);
+          const s = subs[k];
+          const x = Math.floor((COLS - s.length) / 2);
+          fill(pg, x - 1, 20, s.length + 2, 2, C.k);
+          text(pg, x, 20, s, C.w, C.k, true);
+          return pg;
+        }
+
+        // ---- edit -----------------------------------------------------------------------
+        const PAGES = [
+          { from: 0, num: 100, page: (t) => index(t) },
+          { from: bar(1), num: 101, page: signal },
+          { from: bar(3), num: 102, page: spectrumPage },
+          { from: bar(5), num: 888, page: subtitles },
+          { from: bar(7), num: 199, page: (t) => index(t, true) },
+        ];
+        const SEARCH = 0.45, PAINT = 0.4;
+        function paint(ctx, t) {
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0, 0, W, H);
+          let i = PAGES.length - 1;
+          while (i > 0 && t < PAGES[i].from) i--;
+          const into = t - PAGES[i].from;
+          if (i > 0 && into < SEARCH + PAINT) {
+            // Old page stays up while the header searches, then the new one
+            // paints over it top to bottom.
+            const old = PAGES[i - 1].page(t);
+            const rolling = String(100 + ((Math.floor(t * 30) * 37) % 800)).padStart(3, "0");
+            header(old, into < SEARCH ? rolling : PAGES[i].num, t, into < SEARCH);
+            drawPage(ctx, old);
+            if (into >= SEARCH) drawPage(ctx, PAGES[i].page(t), Math.floor(((into - SEARCH) / PAINT) * ROWS));
+            return;
+          }
+          drawPage(ctx, PAGES[i].page(t));
+        }
+
+        const tl = gsap.timeline({ paused: true });
+        Kino.screenPass(document.getElementById("stage"), tl, {
+          width: W, height: H, duration: DURATION, fps: FPS, paint,
+          // A living-room TV: colour mode, shadow-mask grille, curved glass.
+          ...Kino.teletextTV.texture.screen,
+        });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

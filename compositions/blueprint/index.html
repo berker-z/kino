@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <!-- assets/ (track, beat map, spectrum) is local only. -->
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <script src="assets/audiomap.js"></script>
+    <script src="assets/spectrum.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="27" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="27" data-track-index="0"></div>
+      <audio id="music" src="assets/track.opus" data-start="0" data-duration="27" data-track-index="1" data-timeline-role="music"></audio>
+    </div>
+    <script>
+      // Blueprint: one engineering sheet for "The Future of Speech", and a
+      // camera that travels across it. No cuts: the transitions are camera
+      // moves, and each detail draws itself as we arrive. The microphone
+      // explodes one part per beat, the speaker cone moves with the bass, the
+      // song itself is plotted as a spectral section. Painted in grayscale
+      // (paper ~0.12, ink ~0.95); screenPass maps it to blueprint blue with the
+      // screen grille off, keeping only a little ink bleed and grain.
+      const W = 2560, H = 1440, DURATION = 27, FPS = 30;
+      const SW = 6400, SH = 3600; // the sheet, in sheet units
+      const map = Kino.beatMap(window.AUDIOMAP);
+      const spectrum = window.SPECTRUM;
+      const b = (i) => map.beats[i];
+      const beat = b(1) - b(0);
+      const bar = (n) => b(2 + 4 * n);
+      const clamp = (x, a = 0, c = 1) => Math.min(c, Math.max(a, x));
+      const prog = (t, at, dur) => clamp((t - at) / dur);
+      const easeOut = (x) => 1 - Math.pow(1 - clamp(x), 3);
+      const easeInOut = (x) => { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+
+      // Gray levels painted into the canvas; Kino.blueprint's ramp turns them blue.
+      const PAPER = "rgb(31,31,31)", INK = "#f2f2f2", INK_SOFT = "rgba(242,242,242,0.55)";
+
+      // ---- pen: everything draws itself (Kino.pen) -----------------------------
+      const { polyP, lineP, rectP, arcP, ellipseP, arrowHead, hatch, dim, balloon } = Kino.pen;
+      const label = (ctx, text, x, y, opts) => Kino.pen.penLabel(ctx, text, x, y, opts);
+
+      // ---- paper ---------------------------------------------------------------------
+      // Mottled paper with fibres, as a tile repeated in sheet space so it
+      // travels with the sheet.
+      function paperTile() {
+        const s = 512, c = document.createElement("canvas");
+        c.width = c.height = s;
+        const g = c.getContext("2d");
+        const img = g.createImageData(s, s);
+        for (let y = 0; y < s; y++) for (let x = 0; x < s; x++) {
+          const n = Kino.noise2(x / 64, y / 64, 4) * 0.6 + Kino.noise2(x / 13, y / 13, 9) * 0.4;
+          const v = 26 + n * 12;
+          const i = (y * s + x) * 4;
+          img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+          img.data[i + 3] = 255;
+        }
+        g.putImageData(img, 0, 0);
+        g.strokeStyle = "rgba(255,255,255,0.05)";
+        g.lineWidth = 1;
+        for (let k = 0; k < 140; k++) {
+          const x = Kino.hash(k, 1) * s, y = Kino.hash(k, 2) * s, a = Kino.hash(k, 3) * Math.PI, l = 10 + 40 * Kino.hash(k, 4);
+          g.beginPath();
+          g.moveTo(x, y);
+          g.quadraticCurveTo(x + Math.cos(a) * l * 0.5 + 6, y + Math.sin(a) * l * 0.5, x + Math.cos(a) * l, y + Math.sin(a) * l);
+          g.stroke();
+        }
+        return c;
+      }
+
+      // ---- camera ---------------------------------------------------------------------
+      // Poses: hold, then ease to the next over `dur`; while holding, drift
+      // slowly so something always moves.
+      const shots = [
+        { at: 0, dur: 0, x: 3200, y: 1800, z: 0.4, drift: [6, 0, 0.002] },
+        { at: bar(0) - 0.2, dur: beat * 1.5, x: 1450, y: 1850, z: 0.75, drift: [12, -4, 0.004] },
+        { at: bar(2) - 0.3, dur: beat * 1.5, x: 3500, y: 1950, z: 0.9, drift: [0, 0, 0] },
+        { at: bar(3), dur: bar(5) - bar(3) - 0.4, x: 3500, y: 2010, z: 1.12, drift: [0, 0, 0], ease: (x) => x },
+        { at: bar(5) - 0.3, dur: beat * 1.5, x: 5050, y: 1560, z: 0.85, drift: [-10, 6, 0.004] },
+        { at: bar(7) - 0.2, dur: beat * 2, x: 3200, y: 1800, z: 0.4, drift: [0, 0, 0.002] },
+        { at: bar(8) - 0.2, dur: beat * 1.5, x: 5490, y: 3250, z: 1.45, drift: [-8, 0, 0.003] },
+      ];
+      const camera = Kino.sheetCamera(shots);
+
+      // ---- the song ----------------------------------------------------------------------
+      // Bass energy 0-1 for the speaker cone, from the low bands, smoothed.
+      const bassAt = Kino.bassFollower(spectrum);
+
+      Kino.whenReady(Kino.blueprint).then(() => {
+        const tile = paperTile();
+
+        // ---- sheet furniture ------------------------------------------------------------
+        function sheet(ctx, t) {
+          ctx.fillStyle = ctx.createPattern(tile, "repeat");
+          ctx.fillRect(0, 0, SW, SH);
+          // Fold creases: the sheet was folded in four.
+          ctx.save();
+          ctx.lineWidth = 14; ctx.strokeStyle = "rgba(255,255,255,0.035)";
+          lineP(ctx, SW / 2, 0, SW / 2, SH, 1); lineP(ctx, 0, SH / 2, SW, SH / 2, 1);
+          ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,0.35)";
+          lineP(ctx, SW / 2 + 9, 0, SW / 2 + 9, SH, 1); lineP(ctx, 0, SH / 2 + 9, SW, SH / 2 + 9, 1);
+          ctx.restore();
+          // Grid, sweeping in from the left.
+          const gp = prog(t, 0, 1.4);
+          ctx.save();
+          for (let x = 120, i = 0; x <= 6280; x += 50, i++) {
+            if (i / 124 > gp) break;
+            ctx.strokeStyle = i % 5 ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.13)";
+            ctx.lineWidth = i % 5 ? 2 : 3;
+            lineP(ctx, x, 120, x, 3480, 1);
+          }
+          for (let y = 120, i = 0; y <= 3480; y += 50, i++) {
+            ctx.strokeStyle = i % 5 ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.13)";
+            ctx.lineWidth = i % 5 ? 2 : 3;
+            lineP(ctx, 120, y, 6280, y, gp);
+          }
+          ctx.restore();
+          // Border and zone marks.
+          const bp = prog(t, 0.1, 1.4);
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 3; rectP(ctx, 60, 60, 6280, 3480, bp);
+          ctx.lineWidth = 7; rectP(ctx, 120, 120, 6160, 3360, bp);
+          ctx.lineWidth = 3;
+          for (let i = 0; i < 8; i++) {
+            const x = 120 + (i + 0.5) * 770;
+            if (i) { lineP(ctx, 120 + i * 770, 60, 120 + i * 770, 120, bp); lineP(ctx, 120 + i * 770, 3480, 120 + i * 770, 3540, bp); }
+            label(ctx, String(i + 1), x, 104, { size: 36, align: "center", p: bp });
+            label(ctx, String(i + 1), x, 3524, { size: 36, align: "center", p: bp });
+          }
+          for (let i = 0; i < 4; i++) {
+            const y = 120 + (i + 0.5) * 840;
+            if (i) { lineP(ctx, 60, 120 + i * 840, 120, 120 + i * 840, bp); lineP(ctx, 6280, 120 + i * 840, 6340, 120 + i * 840, bp); }
+            label(ctx, "ABCD"[i], 90, y + 12, { size: 36, align: "center", p: bp });
+            label(ctx, "ABCD"[i], 6310, y + 12, { size: 36, align: "center", p: bp });
+          }
+        }
+
+        // Title block, bottom right. The title itself is written last.
+        function titleBlock(ctx, t) {
+          const p = prog(t, 0.6, 1.6);
+          const x = 4700, y = 3020, w = 1580, h = 460;
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 5; rectP(ctx, x, y, w, h, p);
+          ctx.lineWidth = 3;
+          lineP(ctx, x, y + 190, x + w, y + 190, p);
+          lineP(ctx, x, y + 325, x + w, y + 325, p);
+          for (const cx of [x + 527, x + 1053]) lineP(ctx, cx, y + 190, cx, y + h, p);
+          const cells = [["DWG NO.", "FOS-001"], ["SCALE", "NTS"], ["SHEET", "1 / 1"], ["DRAWN", "BERKER-Z"], ["DATE", "2026-10-08"], ["REV", "A"]];
+          cells.forEach(([k, v], i) => {
+            const cx = x + (i % 3) * 527 + 26, cy = y + 190 + Math.floor(i / 3) * 135;
+            const q = prog(t, 1.2 + i * 0.12, 0.5);
+            label(ctx, k, cx, cy + 40, { size: 26, ink: INK_SOFT, p: q });
+            label(ctx, v, cx, cy + 105, { size: 46, p: q });
+          });
+          label(ctx, "TITLE", x + 26, y + 46, { size: 26, ink: INK_SOFT, p: prog(t, 1.2, 0.5) });
+          // Written on arrival at the end: outline first, then filled.
+          const at = bar(8) + beat * 1.2;
+          const tx = x + 26, ty = y + 160;
+          Kino.wipeText(ctx, "THE FUTURE OF SPEECH", { x: tx, y: ty, size: 104, weight: 700, family: "Antonio", outline: 3, ink: INK, progress: prog(t, at, beat * 1.6) });
+          Kino.wipeText(ctx, "THE FUTURE OF SPEECH", { x: tx, y: ty, size: 104, weight: 700, family: "Antonio", ink: INK, progress: prog(t, at + beat * 1.4, beat * 1.2) });
+        }
+
+        // Signal path across the top: VOICE → … → SPEAKER, with a pulse
+        // hopping one stage per beat.
+        const stages = ["VOICE", "MIC", "PREAMP", "ADC", "CODEC", "DAC", "SPEAKER"];
+        function signalPath(ctx, t) {
+          const x0 = 420, y = 250, w = 400, h = 150, gap = 170;
+          ctx.strokeStyle = INK;
+          label(ctx, "SIGNAL PATH", x0, y - 40, { size: 30, ink: INK_SOFT, p: prog(t, 0.4, 0.6) });
+          stages.forEach((name, i) => {
+            const bx = x0 + i * (w + gap), p = prog(t, 0.5 + i * 0.18, 0.6);
+            ctx.lineWidth = 4;
+            rectP(ctx, bx, y, w, h, p);
+            label(ctx, name, bx + w / 2, y + h / 2 + 14, { size: 40, align: "center", p: clamp(p * 2 - 1) });
+            if (i < stages.length - 1) {
+              const ap = prog(t, 0.7 + i * 0.18, 0.4);
+              ctx.lineWidth = 3;
+              lineP(ctx, bx + w, y + h / 2, bx + w + gap - 6, y + h / 2, ap);
+              if (ap >= 1) arrowHead(ctx, bx + w + gap - 4, y + h / 2, 0);
+            }
+          });
+          if (t > 2) {
+            const hop = (t - b(0)) / beat;
+            const i = Math.floor(hop) % (stages.length - 1);
+            const f = easeInOut((hop % 1) / 0.6);
+            const px = x0 + w + i * (w + gap) + f * gap, py = y + h / 2;
+            const glow = ctx.createRadialGradient(px, py, 0, px, py, 46);
+            glow.addColorStop(0, "rgba(255,255,255,1)");
+            glow.addColorStop(0.3, "rgba(255,255,255,0.5)");
+            glow.addColorStop(1, "rgba(255,255,255,0)");
+            ctx.fillStyle = glow;
+            ctx.fillRect(px - 50, py - 50, 100, 100);
+          }
+        }
+
+        // ---- fig. 1: microphone, exploded ------------------------------------------------
+        const MX = 1150;
+        const parts = [
+          { name: "GRILLE, MESH", dy: -380, beat: 0, draw: (ctx, cy, p) => {
+            arcP(ctx, MX, cy, 230, Math.PI, Math.PI * 2, p);
+            lineP(ctx, MX - 230, cy, MX + 230, cy, p);
+            const dome = new Path2D(); dome.arc(MX, cy, 226, Math.PI, Math.PI * 2); dome.closePath();
+            ctx.save(); ctx.lineWidth = 2; ctx.strokeStyle = INK_SOFT;
+            hatch(ctx, dome, [MX - 230, cy - 230, 460, 230], clamp(p * 2 - 1), 30, 1);
+            hatch(ctx, dome, [MX - 230, cy - 230, 460, 230], clamp(p * 2 - 1), 30, -1);
+            ctx.restore();
+          }, edge: [230, -110], y: 820 },
+          { name: "CAPSULE, 25 MM", dy: -230, beat: 1, draw: (ctx, cy, p) => {
+            rectP(ctx, MX - 150, cy - 55, 300, 110, p);
+            lineP(ctx, MX - 130, cy, MX + 130, cy, clamp(p * 2 - 1));
+            for (let k = -3; k <= 3; k++) arcP(ctx, MX + k * 36, cy + 30, 9, 0, Math.PI * 2, clamp(p * 2 - 1));
+          }, edge: [150, 0], y: 930 },
+          { name: "SHOCK MOUNT", dy: -110, beat: 2, draw: (ctx, cy, p) => {
+            ellipseP(ctx, MX, cy, 270, 60, p);
+            ellipseP(ctx, MX, cy, 200, 38, clamp(p * 1.5 - 0.5));
+          }, edge: [270, 0], y: 1060 },
+          { name: "BODY, BRASS", dy: 0, beat: -1, draw: (ctx, cy, p) => {
+            polyP(ctx, [[MX - 170, cy - 440], [MX + 170, cy - 440], [MX + 170, cy + 440], [MX - 170, cy + 440]], p, true);
+            for (const gy of [-330, -300, 300]) lineP(ctx, MX - 170, cy + gy, MX + 170, cy + gy, clamp(p * 2 - 1));
+            rectP(ctx, MX - 70, cy - 120, 140, 70, clamp(p * 2 - 1));
+            label(ctx, "K-1", MX, cy - 72, { size: 34, align: "center", p: clamp(p * 2 - 1) });
+          }, edge: [170, -60], y: 1560 },
+          { name: "XLR-3 CONNECTOR", dy: 170, beat: 3, draw: (ctx, cy, p) => {
+            rectP(ctx, MX - 120, cy - 60, 240, 120, p);
+            for (let k = -1; k <= 1; k++) arcP(ctx, MX + k * 60, cy + 10, 16, 0, Math.PI * 2, clamp(p * 2 - 1));
+          }, edge: [120, 0], y: 2070 },
+          { name: "CABLE, 5 M", dy: 240, beat: 3, draw: (ctx, cy, p) => {
+            const pts = [];
+            for (let k = 0; k <= 40; k++) { const u = k / 40; pts.push([MX + Math.pow(u, 2) * 700, cy + u * 650 - Math.sin(u * Math.PI) * 120]); }
+            polyP(ctx, pts, p);
+            polyP(ctx, pts.map(([x, y]) => [x + 30, y - 6]), p);
+          }, edge: [10, 150], y: 2140 },
+        ];
+        function microphone(ctx, t) {
+          const start = bar(0) + beat * 0.2;
+          ctx.strokeStyle = INK;
+          // Centre line.
+          ctx.save(); ctx.lineWidth = 2.5; ctx.setLineDash([70, 14, 10, 14]);
+          lineP(ctx, MX, 360 + 230, MX, 2950, prog(t, start, beat * 1.5));
+          ctx.restore();
+          label(ctx, "FIG. 1   MICROPHONE, EXPLODED VIEW", 1880, 1060, { size: 36, p: prog(t, start + beat, beat) });
+          // Parts list.
+          const tx = 1880, ty = 1110, rows = parts.length;
+          const tp = prog(t, start + beat * 1.2, beat);
+          ctx.lineWidth = 3;
+          rectP(ctx, tx, ty, 820, 80 + rows * 70, tp);
+          lineP(ctx, tx, ty + 80, tx + 820, ty + 80, tp);
+          lineP(ctx, tx + 110, ty, tx + 110, ty + 80 + rows * 70, tp);
+          lineP(ctx, tx + 690, ty, tx + 690, ty + 80 + rows * 70, tp);
+          label(ctx, "ITEM", tx + 55, ty + 52, { size: 28, align: "center", ink: INK_SOFT, p: tp });
+          label(ctx, "DESCRIPTION", tx + 140, ty + 52, { size: 28, ink: INK_SOFT, p: tp });
+          label(ctx, "QTY", tx + 755, ty + 52, { size: 28, align: "center", ink: INK_SOFT, p: tp });
+          parts.forEach((part, i) => {
+            ctx.lineWidth = 4;
+            const draw = prog(t, start + i * beat * 0.3, beat * 1.3);
+            const e = part.beat < 0 ? 0 : easeOut(prog(t, bar(1) + part.beat * beat, beat * 0.6));
+            const cy = part.y + part.dy * e;
+            part.draw(ctx, cy, draw);
+            // Callout and parts-list row, once the part has moved (body: on the first beat).
+            const callAt = bar(1) + Math.max(0, part.beat) * beat + beat * 0.3;
+            const cp = prog(t, callAt, beat * 0.8);
+            balloon(ctx, MX + part.edge[0], cy + part.edge[1], MX + 560, cy + part.edge[1] - 50, i + 1, cp);
+            const ry = ty + 80 + i * 70;
+            const rp = prog(t, callAt + beat * 0.2, beat * 0.6);
+            ctx.lineWidth = 2;
+            if (i < rows - 1) lineP(ctx, tx, ry + 70, tx + 820, ry + 70, tp);
+            label(ctx, String(i + 1), tx + 55, ry + 48, { size: 34, align: "center", p: rp });
+            label(ctx, part.name, tx + 140, ry + 48, { size: 34, p: rp });
+            label(ctx, "1", tx + 755, ry + 48, { size: 34, align: "center", p: rp });
+          });
+        }
+
+        // ---- fig. 2: speaker driver in section, cone on the bass ------------------------------
+        const SX = 3500;
+        function speaker(ctx, t) {
+          const start = bar(2) + beat * 0.3;
+          const P = (k, len = beat * 1.2) => prog(t, start + k * beat * 0.25, len);
+          const d = -bassAt(t) * 70 * prog(t, start + beat, beat); // cone travel, up on bass
+          ctx.strokeStyle = INK;
+          // Centre line.
+          ctx.save(); ctx.lineWidth = 2.5; ctx.setLineDash([70, 14, 10, 14]);
+          lineP(ctx, SX, 1180, SX, 2800, P(0, beat * 1.5));
+          ctx.restore();
+          ctx.lineWidth = 4;
+          for (const s of [-1, 1]) {
+            // Basket: flange and struts.
+            polyP(ctx, [[SX + s * 830, 1400], [SX + s * 760, 1400], [SX + s * 340, 2290], [SX + s * 560, 2330]], P(0));
+            // Surround roll.
+            arcP(ctx, SX + s * 712, 1400 + d * 0.3, 46, Math.PI, Math.PI * 2, P(1));
+            // Cone.
+            lineP(ctx, SX + s * 666, 1400 + d * 0.6, SX + s * 175, 2150 + d, P(1));
+            lineP(ctx, SX + s * 640, 1408 + d * 0.6, SX + s * 175, 2172 + d, P(2));
+            // Spider (zigzag).
+            const zz = [];
+            for (let k = 0; k <= 8; k++) zz.push([SX + s * (185 + k * 30), 2268 + d * (1 - k / 8) + (k % 2 ? 14 : -14)]);
+            polyP(ctx, zz, P(3));
+            // Voice coil former and windings.
+            rectP(ctx, SX + (s < 0 ? -185 : 165), 2150 + d, 20, 280, P(3));
+            for (let k = 0; k < 6; k++) arcP(ctx, SX + s * 195, 2290 + d + k * 22, 8, 0, Math.PI * 2, P(4));
+          }
+          // Dust cap.
+          arcP(ctx, SX, 2150 + d, 172, Math.PI, Math.PI * 2, P(2));
+          // Magnet assembly, in section: plates and magnet hatched.
+          const hp = prog(t, start + beat * 2.2, beat * 1.2);
+          const blocks = [];
+          for (const s of [-1, 1]) {
+            blocks.push([SX + (s < 0 ? -560 : 220), 2330, 340, 70, 1]); // top plate
+            blocks.push([SX + (s < 0 ? -560 : 250), 2400, 310, 200, -1]); // magnet
+          }
+          blocks.push([SX - 560, 2600, 1120, 80, 1]); // back plate
+          blocks.push([SX - 150, 2200, 300, 400, 1]); // pole piece
+          for (const [x, y, w, h, dir] of blocks) {
+            ctx.lineWidth = 4;
+            rectP(ctx, x, y, w, h, P(4));
+            const path = new Path2D(); path.rect(x, y, w, h);
+            ctx.save(); ctx.lineWidth = 2; ctx.strokeStyle = INK_SOFT;
+            hatch(ctx, path, [x, y, w, h], hp, dir > 0 ? 24 : 16, dir);
+            ctx.restore();
+          }
+          // Section arrows A–A.
+          const ap = prog(t, start + beat * 2.5, beat * 0.8);
+          ctx.lineWidth = 4;
+          for (const s of [-1, 1]) {
+            const x = SX + s * 1000;
+            lineP(ctx, x, 2480, x, 2620, ap);
+            lineP(ctx, x, 2480, x - s * 90, 2480, ap);
+            if (ap >= 1) arrowHead(ctx, x - s * 90, 2480, s > 0 ? Math.PI : 0, 30);
+            label(ctx, "A", x, 2690, { size: 44, align: "center", p: ap, weight: 500 });
+          }
+          // Dimensions.
+          dim(ctx, SX - 830, 1240, SX + 830, 1240, "Ø 380", prog(t, bar(3), beat));
+          dim(ctx, SX + 1120, 1400, SX + 1120, 2680, "152", prog(t, bar(3) + beat * 0.6, beat));
+          // Live excursion readout.
+          const rp = prog(t, bar(3) + beat, beat * 0.6);
+          ctx.lineWidth = 3;
+          rectP(ctx, SX + 640, 2760, 620, 120, rp);
+          const mm = (-d / 70 * 6).toFixed(1);
+          label(ctx, `EXCURSION  +${mm} MM`, SX + 670, 2838, { size: 36, p: rp });
+          label(ctx, "FIG. 2   DRIVER, SECTION A–A", SX - 1000, 2840, { size: 36, p: prog(t, start + beat * 3, beat) });
+        }
+
+        // ---- fig. 3: the song, plotted ----------------------------------------------------------
+        const RX = 4650, RY = 650, RW = 1600, RH = 1650;
+        const feed = Kino.spectrumFeed({
+          spectrum, beats: map.beats, duration: DURATION, fps: FPS, width: RW, height: RH,
+          left: 0.05, right: 0.95, bottom: 0.94, rows: 40, rowStep: 36, amplitude: 0.16, lineWidth: 4, fadeOldest: 8, ground: PAPER,
+        });
+        function plot(ctx, t) {
+          const start = bar(5) - beat;
+          const p = prog(t, start, beat * 1.5);
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 4;
+          polyP(ctx, [[RX, RY], [RX, RY + RH], [RX + RW, RY + RH]], p);
+          ctx.lineWidth = 3;
+          for (let k = 0; k <= 8; k++) lineP(ctx, RX + (k / 8) * RW, RY + RH, RX + (k / 8) * RW, RY + RH + 26, p);
+          for (let k = 0; k <= 8; k++) lineP(ctx, RX - 26, RY + (k / 8) * RH, RX, RY + (k / 8) * RH, p);
+          label(ctx, "30 HZ", RX, RY + RH + 76, { size: 30, p });
+          label(ctx, "14 KHZ", RX + RW, RY + RH + 76, { size: 30, align: "right", p });
+          label(ctx, "FREQUENCY →", RX + RW / 2, RY + RH + 76, { size: 30, align: "center", ink: INK_SOFT, p });
+          ctx.save();
+          ctx.translate(RX - 60, RY + RH / 2);
+          ctx.rotate(-Math.PI / 2);
+          label(ctx, "TIME →", 0, 0, { size: 30, align: "center", ink: INK_SOFT, p });
+          ctx.restore();
+          label(ctx, "FIG. 3   SPECTRAL SECTION, ONE LINE PER EIGHTH", RX, RY - 50, { size: 36, p: prog(t, start + beat, beat) });
+          if (t > start + beat * 0.5) {
+            ctx.save();
+            ctx.translate(RX, RY);
+            ctx.beginPath(); ctx.rect(4, -40, RW, RH - 2); ctx.clip();
+            feed.paint(ctx, t);
+            ctx.restore();
+          }
+        }
+
+        // General notes, written during the final wide shot.
+        function notes(ctx, t) {
+          const at = bar(7) + beat;
+          const lines = ["NOTES:", "1. ALL DIMENSIONS IN MM UNLESS NOTED.", "2. SIGNAL IS SPEECH. SPEECH IS SIGNAL.", "3. DO NOT SCALE DRAWING.", "4. PLOTTED FROM THE TRACK, 89.1 BPM."];
+          lines.forEach((l, i) => label(ctx, l, 4700, 2580 + i * 70, { size: i ? 34 : 38, p: prog(t, at + i * beat * 0.4, beat * 0.6) }));
+        }
+
+        function paint(ctx, t) {
+          ctx.fillStyle = "rgb(8,8,8)";
+          ctx.fillRect(0, 0, W, H);
+          ctx.save();
+          camera.apply(ctx, t, W, H);
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          sheet(ctx, t);
+          titleBlock(ctx, t);
+          signalPath(ctx, t);
+          microphone(ctx, t);
+          speaker(ctx, t);
+          plot(ctx, t);
+          notes(ctx, t);
+          ctx.restore();
+        }
+
+        const tl = gsap.timeline({ paused: true });
+        Kino.screenPass(document.getElementById("stage"), tl, {
+          width: W, height: H, duration: DURATION, fps: FPS, paint,
+          // A print, not a screen: ramp, a little ink bleed, paper grain.
+          ...Kino.blueprint.texture.screen,
+        });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

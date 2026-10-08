@@ -4,24 +4,24 @@ A motion design library for HyperFrames: aesthetics, motion primitives, effects,
 
 ## Layout
 
+`docs/architecture.md` explains the pipeline and how to mix pieces. In short: signals read the song, sources paint grayscale, arrange moves things in time, a pass turns the picture into a medium, a look bundles pass settings with palette and motion rules.
+
 ```
 src/                 TypeScript library, bundled to window.Kino
-  aesthetics/        MotionAesthetic objects (brutalistEditorial, nordTerminal, signalDither + signalPalettes, cyanotype)
-  motion/            fade, slide, stagger, maskReveal, wipe, typewriter, blink
-  effects/           grain, grid, vignette, crt, ditherCanvas (1-bit/smooth canvas renderer), screenPass (WebGL ramp/grille/lens pass)
-  visuals/           grayscale painters (sphere, starburst, terrain, tunnel, starfield, ridgelines), spectrumFeed, networkTree, printStrip
-  plates/            preparePlate (photo -> print-ready grayscale), sunprint (brushed emulsion edge)
-  transitions/       tornWipe, lensPass (canvas scenes)
-  components/        animatedText, heroTitle, canvas type (wipeText, caption, haloInk)
-  scenes/            heroReveal
-  audio/             beatMap, beatTicks, tickAt (read side of audiomap.json)
-  runtime/           whenReady (CSS + fonts), timeDriver (seek-safe per-frame callback), getGsap
+  runtime/           timeDriver (seek-safe per-frame callback), whenReady (CSS + fonts), getGsap
+  signals/           beatMap, beatTicks, tickAt, bandEnergy, bassFollower, decodeSamples, autoGain
+  sources/           preparePlate, sunprint, painters, spectrumFeed, networkTree, pen, beam, teletext, canvas type
+  arrange/           sheetCamera, printRun, registerDrift, printStrip, tornWipe, lensPass
+  passes/            screenPass (ramp / grille / lens / colour mode), risoPass (two-ink print), ditherCanvas
+  looks/             MotionAesthetic bundles: cyanotype, blueprint, phosphor, teletextTV, riso, signalDither, ...
+  dom/               first-era GSAP + CSS pieces (motion, heroTitle, heroReveal, grain, crt...)
 scripts/build.mjs    bundles src/ and copies kino.js, gsap, fonts into every compositions/*/vendor/
 scripts/spectrum.py  per-frame spectrum of an audio file -> JSON or window.<NAME> JS
+scripts/samples.py   raw waveform samples (int8, base64) -> window.<NAME> JS
 compositions/        each is a standalone HyperFrames project (index.html + assets/)
-research/            teardowns of reference videos (index.html report + scripts; media/ is gitignored)
-docs/                lessons.md, primitives/*.md
-examples/            rendered outputs (gitignored where they contain music)
+research/            teardowns of reference videos (report + scripts; media/ is gitignored)
+docs/                architecture.md, lessons.md, primitives/*.md
+examples/            rendered outputs (videos gitignored); examples/styles/index.html is the four-styles showcase
 ```
 
 ## Working loop

@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <!-- assets/ (track, beat map, spectrum, raw samples) is local only. -->
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <script src="assets/audiomap.js"></script>
+    <script src="assets/spectrum.js"></script>
+    <script src="assets/scope.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="27" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="27" data-track-index="0"></div>
+      <audio id="music" src="assets/track.opus" data-start="0" data-duration="27" data-track-index="1" data-timeline-role="music"></audio>
+    </div>
+    <script>
+      // Oscilloscope: the song drawn by an electron beam on an amber phosphor
+      // tube. Every trace is the actual audio (raw samples in assets/scope.js),
+      // not an animation of it. The scope changes mode with the song, and the
+      // picture squashes to a line and reopens between modes, like turning
+      // the mode knob. Painted in grayscale with additive light; screenPass
+      // maps it to amber phosphor and bulges the tube.
+      const W = 2560, H = 1440, DURATION = 27, FPS = 30;
+      const map = Kino.beatMap(window.AUDIOMAP);
+      const spectrum = window.SPECTRUM;
+      const b = (i) => map.beats[i];
+      const beat = b(1) - b(0);
+      const bar = (n) => b(2 + 4 * n);
+      const clamp = (x, a = 0, c = 1) => Math.min(c, Math.max(a, x));
+      const prog = (t, at, dur) => clamp((t - at) / dur);
+      const smooth = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
+
+      // Raw audio, int8 at 24 kHz (scripts/samples.py), and the low bands.
+      const samples = Kino.decodeSamples(window.SCOPE);
+      const RATE = samples.rate, S = samples.mono;
+      const bassAt = (t) => Kino.bandEnergy(spectrum, t, 0, 8);
+
+      // Graticule: 10 x 8 divisions.
+      const GX = 280, GY = 120, GW = 2000, GH = 1200, DX = GW / 10, DY = GH / 8;
+      const CX = GX + GW / 2, CY = GY + GH / 2;
+
+      // The beam (Kino.beam, Kino.beamText): additive three-pass strokes, so
+      // crossings get brighter like phosphor. Colour comes from Kino.phosphor.
+      const { beam, beamText } = Kino;
+      function readout(ctx, text, x, y, align = "left", alpha = 0.55) {
+        ctx.save();
+        ctx.font = `500 30px "IBM Plex Mono"`;
+        ctx.letterSpacing = "3px";
+        ctx.textAlign = align;
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.fillText(text, x, y);
+        ctx.restore();
+      }
+
+      function graticule(ctx, t) {
+        const p = prog(t, 0.1, 1.2);
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,255,255,0.13)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i <= 10; i++) { ctx.moveTo(GX + i * DX, CY - (GH / 2) * p); ctx.lineTo(GX + i * DX, CY + (GH / 2) * p); }
+        for (let j = 0; j <= 8; j++) { ctx.moveTo(CX - (GW / 2) * p, GY + j * DY); ctx.lineTo(CX + (GW / 2) * p, GY + j * DY); }
+        ctx.stroke();
+        // Fine ticks on the centre axes.
+        ctx.strokeStyle = "rgba(255,255,255,0.2)";
+        ctx.beginPath();
+        for (let i = 0; i <= 50; i++) { const x = GX + (i / 50) * GW; ctx.moveTo(x, CY - 10 * p); ctx.lineTo(x, CY + 10 * p); }
+        for (let j = 0; j <= 40; j++) { const y = GY + (j / 40) * GH; ctx.moveTo(CX - 10 * p, y); ctx.lineTo(CX + 10 * p, y); }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // ---- modes ------------------------------------------------------------------
+      // Sweep: Y-T, triggered on every beat. The trace runs left to right
+      // across the beat; the previous sweep fades out behind it.
+      // Auto gain, like a scope's auto-set: quiet passages still fill the screen.
+      const autoGain = (t) => Kino.autoGain(samples, t);
+      function sweep(ctx, t, gain = 1) {
+        gain *= autoGain(t);
+        const k = Math.max(0, Math.floor((t - b(0)) / beat));
+        const start = b(0) + k * beat;
+        const drawSweep = (s0, upto, alpha) => {
+          const cols = Math.floor(GW * upto);
+          if (cols < 2) return;
+          const spp = (beat * RATE) / GW;
+          const top = [], bot = [];
+          for (let c = 0; c < cols; c += 2) {
+            const i0 = Math.floor(s0 * RATE + c * spp);
+            let lo = 1, hi = -1;
+            for (let i = i0; i < i0 + spp * 2; i += 2) { const v = S(i); if (v < lo) lo = v; if (v > hi) hi = v; }
+            top.push([GX + c, CY - hi * 300 * gain]);
+            bot.push([GX + c, CY - lo * 300 * gain]);
+          }
+          beam(ctx, top, alpha);
+          beam(ctx, bot, alpha * 0.8);
+        };
+        if (t < b(0)) {
+          beam(ctx, [[GX, CY], [GX + GW * ((t % 0.8) / 0.8), CY]], 0.8); // free-running trace before the first beat
+          return;
+        }
+        drawSweep(start - beat, 1, 0.35 * (1 - (t - start) / beat)); // last sweep, fading
+        drawSweep(start, (t - start) / beat, 1);
+      }
+
+      // Phase portrait: the signal against itself 2 and 4 ms later, in 3D,
+      // turning at a constant rate. Periodic sound makes loops; noise makes fur.
+      function portrait(ctx, t) {
+        const tau = Math.round(0.0021 * RATE);
+        const n = Math.round(RATE / FPS) * 2;
+        const rot = t * 0.55, tilt = 0.35;
+        const g = autoGain(t) * 1.25;
+        const proj = (x, y, z) => {
+          const xr = x * Math.cos(rot) + z * Math.sin(rot);
+          const zr = -x * Math.sin(rot) + z * Math.cos(rot);
+          const yr = y * Math.cos(tilt) - zr * Math.sin(tilt);
+          const zz = y * Math.sin(tilt) + zr * Math.cos(tilt);
+          const f = 1 / (1 + zz * 0.25);
+          return [CX + xr * 470 * f * g, CY - yr * 470 * f * g];
+        };
+        for (let ghost = 5; ghost >= 0; ghost--) {
+          const end = Math.floor((t - ghost / FPS) * RATE);
+          const pts = [];
+          for (let i = end - n; i < end; i += 2) pts.push(proj(S(i), S(i - tau), S(i - 2 * tau)));
+          beam(ctx, pts, ghost ? 0.5 * Math.pow(0.6, ghost) : 1);
+        }
+      }
+
+      // Polar: one beat's worth of audio wrapped around a circle that breathes
+      // with the bass, the ring slowly turning.
+      function polar(ctx, t) {
+        const n = 1800;
+        const r0 = 300 + bassAt(t) * 160;
+        for (let ghost = 4; ghost >= 0; ghost--) {
+          const end = Math.floor((t - ghost / FPS) * RATE);
+          const pts = [];
+          for (let k = 0; k <= n; k++) {
+            const a = (k / n) * Math.PI * 2 + t * 0.3;
+            const v = S(end - n + k) * 180;
+            pts.push([CX + Math.cos(a) * (r0 + v), CY + Math.sin(a) * (r0 + v)]);
+          }
+          beam(ctx, pts, ghost ? 0.45 * Math.pow(0.6, ghost) : 1);
+        }
+      }
+
+      // Lissajous: two tones locked to the tempo, a new frequency ratio on
+      // every beat, the phase drifting so the figure seems to turn in 3D.
+      const ratios = [[1, 2], [2, 3], [3, 4], [3, 5], [4, 5], [1, 3], [5, 6], [2, 5]];
+      function lissajous(ctx, t) {
+        const k = Math.floor((t - bar(5)) / beat);
+        const f = smooth(((t - bar(5)) / beat - k) / 0.35);
+        const [a0, b0] = ratios[Math.max(0, k - 1) % ratios.length];
+        const [a1, b1] = ratios[Math.max(0, k) % ratios.length];
+        const fa = a0 + (a1 - a0) * f, fb = b0 + (b1 - b0) * f;
+        const phase = t * 0.9;
+        const env = 0.85 + 0.15 * bassAt(t);
+        const pts = [];
+        for (let i = 0; i <= 2400; i++) {
+          const u = (i / 2400) * Math.PI * 2 * 6;
+          pts.push([CX + Math.sin(fa * u + phase) * 560 * env, CY - Math.sin(fb * u) * 500 * env]);
+        }
+        beam(ctx, pts, 0.85);
+        return `LISSAJOUS ${a1}:${b1}`;
+      }
+
+      // ---- edit ---------------------------------------------------------------------------
+      const MODES = [
+        { from: 0, to: bar(1), name: "Y-T   TRIG ON BEAT" },
+        { from: bar(1), to: bar(3), name: "PHASE PORTRAIT   τ = 2.1 MS" },
+        { from: bar(3), to: bar(5), name: "POLAR" },
+        { from: bar(5), to: bar(7), name: "LISSAJOUS" },
+        { from: bar(7), to: DURATION, name: "Y-T   TRIG ON BEAT" },
+      ];
+      const OFF = DURATION - 1.1; // power-off
+
+      Kino.whenReady(Kino.phosphor).then(() => {
+        function paint(ctx, t) {
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0, 0, W, H);
+          // Faint glass glow toward the centre.
+          const glass = ctx.createRadialGradient(CX, CY, 0, CX, CY, 1500);
+          glass.addColorStop(0, "rgba(255,255,255,0.045)");
+          glass.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = glass;
+          ctx.fillRect(0, 0, W, H);
+
+          const off = prog(t, OFF, 0.7);
+          if (off < 1) graticule(ctx, t);
+          const mode = MODES.find((m) => t >= m.from && t < m.to) ?? MODES[MODES.length - 1];
+          // Squash to a line around each mode change, like turning the knob.
+          const edge = Math.min(...MODES.slice(1).map((m) => Math.abs(t - m.from)));
+          const squash = Math.max(0.015, smooth(edge / 0.22));
+
+          ctx.save();
+          ctx.translate(CX, CY);
+          // Power-off: the picture collapses to a line, then to a dot.
+          const sy = off > 0 ? Math.max(0.004, 1 - smooth(off / 0.45)) : squash;
+          const sx = off > 0.45 ? Math.max(0.002, 1 - smooth((off - 0.45) / 0.4)) : 1;
+          ctx.scale(sx, sy);
+          ctx.translate(-CX, -CY);
+          let label = mode.name;
+          if (mode === MODES[0]) {
+            sweep(ctx, t);
+            beamText(ctx, "THE FUTURE", CX, 400, 190, prog(t, b(2), beat * 0.9));
+            beamText(ctx, "OF SPEECH", CX, 1150, 190, prog(t, b(4), beat * 0.9));
+          } else if (mode === MODES[1]) portrait(ctx, t);
+          else if (mode === MODES[2]) polar(ctx, t);
+          else if (mode === MODES[3]) label = lissajous(ctx, t);
+          else {
+            sweep(ctx, t, 0.7);
+            beamText(ctx, "THE FUTURE", CX, 470, 230, prog(t, bar(7) + beat, beat * 1.2));
+            beamText(ctx, "OF SPEECH", CX, 1090, 230, prog(t, bar(7) + beat * 2.5, beat * 1.2));
+          }
+          ctx.restore();
+          if (off > 0.4 && off < 1) {
+            // The last bright dot fading.
+            const g = ctx.createRadialGradient(CX, CY, 0, CX, CY, 60);
+            g.addColorStop(0, `rgba(255,255,255,${1 - smooth((off - 0.4) / 0.6)})`);
+            g.addColorStop(1, "rgba(255,255,255,0)");
+            ctx.fillStyle = g;
+            ctx.fillRect(CX - 60, CY - 60, 120, 120);
+          }
+          if (off < 0.3) {
+            const a = 0.55 * prog(t, 0.6, 0.8);
+            readout(ctx, "CH1  0.5 V/DIV", GX, GY + GH + 70, "left", a);
+            readout(ctx, label, CX, GY + GH + 70, "center", a);
+            readout(ctx, `${map.bpm.toFixed(1)} BPM   T ${t.toFixed(2)} S`, GX + GW, GY + GH + 70, "right", a);
+            readout(ctx, "THE FUTURE OF SPEECH", GX, GY - 40, "left", a * 0.8);
+            readout(ctx, "KINO SCOPE  MODEL 01", GX + GW, GY - 40, "right", a * 0.8);
+          }
+        }
+
+        const tl = gsap.timeline({ paused: true });
+        Kino.screenPass(document.getElementById("stage"), tl, {
+          width: W, height: H, duration: DURATION, fps: FPS, paint,
+          // A tube, not a TV: amber ramp, no grille, a strong bulge, phosphor glow.
+          ...Kino.phosphor.texture.screen,
+        });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

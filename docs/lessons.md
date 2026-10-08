@@ -22,6 +22,12 @@ Things we learned the hard way building the first scenes. Read this before writi
 
 **Don't pipe a render through `tail`.** It hides the progress bar until the end and then nobody knows how far along it is.
 
+**There is no "previous frame".** HyperFrames seeks frames in any order, so effects that accumulate (phosphor persistence, trails) must be recomputed from time: redraw the last few windows at decaying intensity instead of fading the canvas.
+
+**Real audio needs auto gain.** A scale that fits the chorus leaves the intro as a flat line. Gain from RMS over about half a second, stepped every quarter second so the picture doesn't pump.
+
+**Draw backgrounds before foregrounds** when anything spans cells or rows (teletext double height). Row by row, the next row's background paints over the spill.
+
 ## Thin lines and pixels
 
 Moving fine line art is where most of the time went. The short version:
@@ -35,6 +41,7 @@ So for line art: draw antialiased (`ditherCanvas` `mode: "smooth"`), keep spacin
 ## Taste (Berker's verdicts so far)
 
 - No full-frame flashes or strobing inversions. Hits should move the picture, not blink it.
+- "Move the picture" means a smooth motion, never an instant jump. A per-beat position kick that decays (even 9 px) reads as jerky left-right jitter.
 - Don't dither text. The world can be dithered; type stays crisp on top.
 - No stock retro tropes: no sliced sunset sun, no hexagon tunnel, no hacker HUD for its own sake.
 - Don't default to acid lime. Pick palettes per piece. `iceOnNavy` (`#BFD4FF` on `#0A1022`) is the favorite so far.
@@ -44,4 +51,5 @@ So for line art: draw antialiased (`ditherCanvas` `mode: "smooth"`), keep spacin
 - Something has to move in every shot. Hard cuts between still full-bleed images read as "no motion, no effects, no layouts", even with a great treatment. Constant-speed pushes, sliding strips, growing graphs, layouts with more than one thing in them.
 - Transitions should feel physical: a sheet sliding in, a torn print, a glass lens. The water-drop ripple was the one he didn't like.
 - Whole words and lines, wiped in on beats. Not one letter per beat.
+- A sequence of designed pages with a transition between them reads as a slideshow, however good the pages are (the risograph zine). The ones that worked had continuous motion built into the concept: one sheet and a roaming camera, a beam that never stops drawing, a TV that loads pages.
 - To prove a look, run it on new material in a short piece with music. Matching the reference's own frames convinces nobody.

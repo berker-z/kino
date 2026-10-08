@@ -3,49 +3,64 @@
 export {whenReady} from "./runtime/setup";
 export {getGsap} from "./runtime/gsap";
 
-export {aesthetics, applyAesthetic, brutalistEditorial, cyanotype, nordTerminal} from "./aesthetics";
-export type {MotionAesthetic, AestheticName} from "./aesthetics";
+export {aesthetics, applyAesthetic, blueprint, brutalistEditorial, cyanotype, nordTerminal, phosphor, riso, teletextTV} from "./looks";
+export type {MotionAesthetic, AestheticName} from "./looks";
 
-export {fade} from "./motion/fade";
-export {slide} from "./motion/slide";
-export {stagger} from "./motion/stagger";
-export {maskReveal, wipe} from "./motion/mask-reveal";
-export {typewriter, blink} from "./motion/typewriter";
+export {fade} from "./dom/motion/fade";
+export {slide} from "./dom/motion/slide";
+export {stagger} from "./dom/motion/stagger";
+export {maskReveal, wipe} from "./dom/motion/mask-reveal";
+export {typewriter, blink} from "./dom/motion/typewriter";
 
-export {grain} from "./effects/grain";
-export {grid} from "./effects/grid";
-export {vignette} from "./effects/vignette";
+export {grain} from "./dom/effects/grain";
+export {grid} from "./dom/effects/grid";
+export {vignette} from "./dom/effects/vignette";
 
-export {animatedText, fitToWidth} from "./components/animated-text";
-export {heroTitle} from "./components/hero-title";
+export {animatedText, fitToWidth} from "./dom/components/animated-text";
+export {heroTitle} from "./dom/components/hero-title";
 
-export {heroReveal} from "./scenes/hero-reveal";
-export type {HeroRevealOptions} from "./scenes/hero-reveal";
+export {heroReveal} from "./dom/scenes/hero-reveal";
+export type {HeroRevealOptions} from "./dom/scenes/hero-reveal";
 
-export {signalDither} from "./aesthetics";
-export {signalPalettes} from "./aesthetics/signal-dither";
+export {signalDither} from "./looks";
+export {signalPalettes} from "./looks/signal-dither";
 export {timeDriver} from "./runtime/time-driver";
-export {ditherCanvas} from "./effects/dither-canvas";
-export type {DitherPost, DitherPainter} from "./effects/dither-canvas";
-export {crt} from "./effects/crt";
-export {screenPass, prussianRamp} from "./effects/screen-pass";
-export type {ScreenPassOptions, ScreenPainter, ScreenSettings, ScreenLook} from "./effects/screen-pass";
-export {preparePlate, sunprint} from "./plates/plates";
-export type {Plate, PreparePlateOptions} from "./plates/plates";
-export {tornWipe} from "./transitions/torn-wipe";
-export type {CanvasScene, TornWipeOptions} from "./transitions/torn-wipe";
-export {lensPass, lensPassFx} from "./transitions/lens-pass";
-export type {LensPassOptions} from "./transitions/lens-pass";
-export {wipeText, caption, haloInk} from "./components/canvas-type";
-export type {WipeTextOptions, CaptionOptions} from "./components/canvas-type";
-export {networkTree} from "./visuals/network-tree";
-export type {NetworkTreeOptions, NetworkNode} from "./visuals/network-tree";
-export {printStrip} from "./visuals/print-strip";
-export type {PrintStripOptions} from "./visuals/print-strip";
-export {beatMap} from "./audio/beat-map";
-export type {AudioMap, BeatMap, Drum} from "./audio/beat-map";
-export * as paint from "./visuals/painters";
+export {ditherCanvas} from "./passes/dither-canvas";
+export type {DitherPost, DitherPainter} from "./passes/dither-canvas";
+export {crt} from "./dom/effects/crt";
+export {screenPass, prussianRamp, blueprintRamp, phosphorRamp, makeRamp} from "./passes/screen-pass";
+export type {ScreenPassOptions, ScreenPainter, ScreenSettings, ScreenLook} from "./passes/screen-pass";
+export {risoPass, risoInks} from "./passes/riso-pass";
+export type {RisoPassOptions, RisoPainter, RisoSettings} from "./passes/riso-pass";
+export {preparePlate, sunprint} from "./sources/plates";
+export type {Plate, PreparePlateOptions} from "./sources/plates";
+export {tornWipe} from "./arrange/torn-wipe";
+export type {CanvasScene, TornWipeOptions} from "./arrange/torn-wipe";
+export {lensPass, lensPassFx} from "./arrange/lens-pass";
+export type {LensPassOptions} from "./arrange/lens-pass";
+export {wipeText, caption, haloInk} from "./sources/type";
+export type {WipeTextOptions, CaptionOptions} from "./sources/type";
+export {networkTree} from "./sources/network-tree";
+export type {NetworkTreeOptions, NetworkNode} from "./sources/network-tree";
+export {printStrip} from "./arrange/print-strip";
+export type {PrintStripOptions} from "./arrange/print-strip";
+export {beatMap} from "./signals/beat-map";
+export type {AudioMap, BeatMap, Drum} from "./signals/beat-map";
+export * as paint from "./sources/painters";
 export {hash, noise2} from "./utils/noise";
-export {beatTicks, tickAt} from "./audio/beat-map";
-export {spectrumFeed} from "./visuals/spectrum-feed";
-export type {Spectrum, SpectrumFeed, SpectrumFeedOptions} from "./visuals/spectrum-feed";
+export {beatTicks, tickAt} from "./signals/beat-map";
+export {spectrumFeed} from "./sources/spectrum-feed";
+export type {Spectrum, SpectrumFeed, SpectrumFeedOptions} from "./sources/spectrum-feed";
+
+// Signals
+export {bandEnergy, bassFollower, decodeSamples, autoGain} from "./signals/audio";
+export type {Samples, SampleAsset} from "./signals/audio";
+// Sources
+export * as pen from "./sources/pen";
+export {beam, beamText} from "./sources/beam";
+export {teletext, teletextColors, sixels, sixelText} from "./sources/teletext";
+export type {Cell as TeletextCell, Page as TeletextPage} from "./sources/teletext";
+// Arrangement
+export {sheetCamera} from "./arrange/sheet-camera";
+export type {Shot} from "./arrange/sheet-camera";
+export {printRun, registerDrift} from "./arrange/print-run";
