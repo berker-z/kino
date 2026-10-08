@@ -11,6 +11,7 @@
     --bg: #0B0C0F; --panel: #13151A; --line: #262A33; --text: #D6D9E0; --muted: #8A90A0; --accent: #F2F4F8;
     --tab: var(--accent);
   }
+  body[data-style="cyanotype"] { --tab: #B8D4EE; }
   body[data-style="blueprint"] { --tab: #8FB3E0; }
   body[data-style="oscilloscope"] { --tab: #F7A23A; }
   body[data-style="risograph"] { --tab: #FF48B0; }
@@ -66,6 +67,7 @@
 </div></header>
 
 <nav><div class="wrap">
+  <button data-tab="cyanotype">00 CYANOTYPE</button>
   <button data-tab="blueprint" class="on">01 BLUEPRINT</button>
   <button data-tab="oscilloscope">02 OSCILLOSCOPE</button>
   <button data-tab="risograph">03 RISOGRAPH</button>
@@ -73,6 +75,52 @@
 </div></nav>
 
 <main class="wrap">
+
+<!-- ======================================================================= -->
+<section id="cyanotype">
+  <video src="../screen-test/screen-test-02-1440p.mp4" controls preload="metadata" playsinline></video>
+  <div class="meta"><span><b>25 S</b> · 2560×1440 · 30 FPS</span><span>composition <code>compositions/screen-test</code></span><span data-render="cyanotype"></span></div>
+  <h2>Cyanotype</h2>
+  <p class="lede">The one that started it: the NousCon teaser's look, rebuilt from the teardown and tried on our own material. Sun-printed photos, Prussian blue, filmed off a Trinitron that was never there. It came before the other four, so it's tab zero.</p>
+  <div class="cols">
+    <div class="block">
+      <h3>The idea</h3>
+      <p>The teardown showed the NousCon screen is synthetic: the aperture grille is in phase across all three colours, the grade is one luma-to-blue curve, and the blur only falls off left and right. So instead of filming a CRT we built the screen as a pass, then fed it photos it had never seen (Commons plates: a mouth, a microphone, a switchboard, a dish, a crowd) to check the look holds up off the reference.</p>
+    </div>
+    <div class="block">
+      <h3>Shot list</h3>
+      <ul class="timeline">
+        <li><span>0:00</span>Plotter: the song's spectral history draws line by line, the title wipes in by word.</li>
+        <li><span>0:03</span>The plotter slides off and a contact strip of sunprints slides through. "SPEECH".</li>
+        <li><span>0:09</span>Torn wipe to the dish. "LISTENING".</li>
+        <li><span>0:14</span>A lens pass opens the network inside a glass circle; it grows one generation per beat.</li>
+        <li><span>0:20</span>Torn wipe back to the lockup over the sea.</li>
+      </ul>
+    </div>
+    <div class="block">
+      <h3>Choices</h3>
+      <ul>
+        <li><b>Physical transitions only.</b> Slides, tears, a lens. Things a print or a piece of glass could do; no crossfades.</li>
+        <li><b>Whole words, not letters.</b> The first try revealed letter by letter and was hard to read. Now type wipes in word by word.</li>
+        <li><b>Measured, not eyeballed.</b> Grille pitch, ramp and stripe contrast were matched to the NousCon frames numerically, within about 10%.</li>
+      </ul>
+      <p class="pending">This render is the one you saw first and still has the water drop between the dish and the network. The code doesn't any more; a fresh render is about 45 minutes.</p>
+    </div>
+    <div class="block">
+      <h3>Pieces</h3>
+      <ul>
+        <li><span class="tag new">NEW</span><code>screenPass</code>: gradient-map ramp, mean-preserving grille, lens softness, green fringe, bloom, grain.</li>
+        <li><span class="tag new">NEW</span><code>preparePlate</code> and <code>sunprint</code>: a photo levelled for print inside a brushed cyanotype edge.</li>
+        <li><span class="tag new">NEW</span><code>printStrip</code>, <code>tornWipe</code>, <code>lensPass</code>, <code>networkTree</code>, <code>wipeText</code>, <code>caption</code>.</li>
+        <li><span class="tag used">USED</span><code>spectrumFeed</code> as the plotter, <code>beatMap</code> for the bar cuts.</li>
+      </ul>
+    </div>
+    <div class="block wide">
+      <h3>What I learned</h3>
+      <p>Most of a "CRT look" is the grade, not the screen. The ramp alone gets you 80% of the way; the grille only reads when it doesn't darken the picture, which is why it had to be mean-preserving. The fringe has to shift the picture and leave the grille alone, or the stripes turn green and magenta. Still missing: the fine woven speckle in the NousCon close-ups, which our softness blurs away.</p>
+    </div>
+  </div>
+</section>
 
 <!-- ======================================================================= -->
 <section id="blueprint" class="on">
@@ -287,7 +335,7 @@
 <div class="lightbox" id="lightbox"><img alt=""></div>
 <script>
   // Stills, and a note if a video file is missing.
-  const stills = { blueprint: 5, oscilloscope: 5, risograph: 5, teletext: 5 };
+  const stills = { cyanotype: 5, blueprint: 5, oscilloscope: 5, risograph: 5, teletext: 5 };
   for (const [name, n] of Object.entries(stills)) {
     const sec = document.getElementById(name);
     const video = sec.querySelector("video");
@@ -332,7 +380,7 @@
   if (!start) { try { start = localStorage.getItem("kino-styles-tab") || ""; } catch {} }
   if (document.getElementById(start)) show(start);
   // Render times, filled in after the renders finished.
-  const renders = { blueprint: "render 45 min", oscilloscope: "render 44.5 min", risograph: "render 1.9 min", teletext: "render 43.4 min" };
+  const renders = { cyanotype: "render about 45 min", blueprint: "render 45 min", oscilloscope: "render 44.5 min", risograph: "render 1.9 min", teletext: "render 43.4 min" };
   for (const [k, v] of Object.entries(renders)) document.querySelector(`[data-render="${k}"]`).textContent = v;
 </script>
 </body>
