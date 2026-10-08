@@ -10,7 +10,7 @@ A motion design library for HyperFrames: aesthetics, motion primitives, effects,
 src/                 TypeScript library, bundled to window.Kino
   runtime/           timeDriver (seek-safe per-frame callback), whenReady (CSS + fonts), getGsap
   signals/           beatMap, beatTicks, tickAt, bandEnergy, bassFollower, decodeSamples, autoGain
-  sources/           preparePlate, sunprint, painters, spectrumFeed, networkTree, pen, beam, teletext, canvas type
+  sources/           preparePlate, sunprint, htmlPlate, painters, spectrumFeed, networkTree, pen, beam, teletext, canvas type
   arrange/           sheetCamera, printRun, registerDrift, printStrip, tornWipe, lensPass
   passes/            screenPass (ramp / grille / lens / colour mode), risoPass (two-ink print), ditherCanvas
   looks/             MotionAesthetic bundles: cyanotype, blueprint, phosphor, teletextTV, riso, signalDither, ...

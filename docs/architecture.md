@@ -34,13 +34,14 @@ Data comes from `analyze-beatgrid.py` (audiomap), `scripts/spectrum.py` (spectru
 |---|---|
 | `preparePlate` | a photo as print-ready grayscale (levels + S-curve) |
 | `sunprint` | a plate inside a brushed cyanotype edge |
-| `paint.*` | painters: ridgelines, terrain, starfield, sphere… |
+| `paint.*` | painters: ridgelines, terrain, starfield, sphere, `flowField` (banded noise for halftoning)… |
 | `spectrumFeed` | the song's spectrum as a ridgeline column fed on the beat |
 | `networkTree` | a seeded branching graph that grows by generation |
 | `pen` | shapes that draw themselves: lines, arcs, hatching, dimensions, callouts |
-| `beam`, `beamText` | an electron beam on phosphor, additive |
+| `beam`, `beamText` | an electron beam on phosphor, additive; `{velocity: true}` dims fast swings like a real scope |
 | `teletext`, `sixels`, `sixelText` | teletext pages: cells, glyphs, block mosaics |
 | `wipeText`, `caption`, `haloInk` | type painted into the picture |
+| `htmlPlate`, `drawPart` | a page set in HTML and CSS, snapshotted once, drawn in measured parts |
 
 ### `arrange/`: how it moves in time
 | piece | does |

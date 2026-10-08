@@ -49,6 +49,8 @@
       // The beam (Kino.beam, Kino.beamText): additive three-pass strokes, so
       // crossings get brighter like phosphor. Colour comes from Kino.phosphor.
       const { beam, beamText } = Kino;
+      // Bright where the beam moves slowly, faint on fast swings (see beam.ts).
+      const VEL = { velocity: true };
       function readout(ctx, text, x, y, align = "left", alpha = 0.55) {
         ctx.save();
         ctx.font = `500 30px "IBM Plex Mono"`;
@@ -128,7 +130,7 @@
           const end = Math.floor((t - ghost / FPS) * RATE);
           const pts = [];
           for (let i = end - n; i < end; i += 2) pts.push(proj(S(i), S(i - tau), S(i - 2 * tau)));
-          beam(ctx, pts, ghost ? 0.5 * Math.pow(0.6, ghost) : 1);
+          beam(ctx, pts, ghost ? 0.5 * Math.pow(0.6, ghost) : 1, VEL);
         }
       }
 
@@ -145,7 +147,7 @@
             const v = S(end - n + k) * 180;
             pts.push([CX + Math.cos(a) * (r0 + v), CY + Math.sin(a) * (r0 + v)]);
           }
-          beam(ctx, pts, ghost ? 0.45 * Math.pow(0.6, ghost) : 1);
+          beam(ctx, pts, ghost ? 0.45 * Math.pow(0.6, ghost) : 1, { velocity: true, floor: 0.4 });
         }
       }
 
@@ -165,7 +167,7 @@
           const u = (i / 2400) * Math.PI * 2 * 6;
           pts.push([CX + Math.sin(fa * u + phase) * 560 * env, CY - Math.sin(fb * u) * 500 * env]);
         }
-        beam(ctx, pts, 0.85);
+        beam(ctx, pts, 0.85, VEL);
         return `LISSAJOUS ${a1}:${b1}`;
       }
 

@@ -21,3 +21,12 @@ export function noise2(x: number, y: number, seed = 0): number {
   const d = hash(xi + 1, yi + 1, seed);
   return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
 }
+
+/** Smooth 3D value noise → [0, 1). The third axis is usually time. */
+export function noise3(x: number, y: number, z: number, seed = 0): number {
+  const zi = Math.floor(z);
+  const fz = smooth(z - zi);
+  const a = noise2(x, y, seed + zi * 7919);
+  const b = noise2(x, y, seed + (zi + 1) * 7919);
+  return a + (b - a) * fz;
+}

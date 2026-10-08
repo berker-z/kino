@@ -58,6 +58,9 @@ export type {Samples, SampleAsset} from "./signals/audio";
 // Sources
 export * as pen from "./sources/pen";
 export {beam, beamText} from "./sources/beam";
+export type {BeamOptions} from "./sources/beam";
+export {htmlPlate, drawPart} from "./sources/html-plate";
+export type {HtmlPlate, HtmlPlateOptions, PartBox} from "./sources/html-plate";
 export {teletext, teletextColors, sixels, sixelText} from "./sources/teletext";
 export type {Cell as TeletextCell, Page as TeletextPage} from "./sources/teletext";
 // Arrangement

@@ -1,4 +1,4 @@
-import {hash, noise2} from "../utils/noise";
+import {hash, noise2, noise3} from "../utils/noise";
 
 // Grayscale painters for ditherCanvas: draw in white on black, brightness =
 // ink density after dithering. Every painter is a pure function of its
@@ -376,4 +376,75 @@ function catmullRom(row: readonly number[], position: number): number {
   const at = (n: number) => row[Math.min(row.length - 1, Math.max(0, n))];
   const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2);
   return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+}
+
+// Luminance of a full-saturation hue: as h runs 0..1 it rises and falls
+// through yellow, green and cyan and dips at blue and red, which turns a
+// smooth field into soft bands.
+function hueLuma(h: number): number {
+  const ch = (n: number) => Math.min(1, Math.max(0, Math.abs(((h * 6 + n) % 6) - 3) - 1));
+  return 0.2126 * ch(0) + 0.7152 * ch(4) + 0.0722 * ch(2);
+}
+
+const fieldBuffers = new WeakMap<Ctx, HTMLCanvasElement>();
+
+/**
+ * A slowly flowing noise field in bands, mostly dark with bright crests. Made
+ * to be halftoned: give it to risoPass or a dither and the crests open into
+ * dots while the rest stays paper. After the halftone-field block in the
+ * HyperFrames registry (Apache 2.0): ridged noise, read through a hue's
+ * luminance for the bands, then a gamma that crushes the midtones. The gamma
+ * is the look.
+ *
+ * Sampled every `res` px and scaled up smoothly, so it's cheap at 1440p; a
+ * halftone cell is bigger than that anyway.
+ */
+export function flowField(
+  ctx: Ctx,
+  {width, height, t, freq = 1.6, speed = 0.12, gamma = 4, bias = -0.04, res = 8, seed = 0, brightness = 1}: {
+    width: number;
+    height: number;
+    t: number;
+    /** Features across the frame's height. */
+    freq?: number;
+    /** How fast the field flows, in noise units per second. */
+    speed?: number;
+    gamma?: number;
+    bias?: number;
+    res?: number;
+    seed?: number;
+    brightness?: number;
+  },
+): void {
+  const gw = Math.ceil(width / res) + 1;
+  const gh = Math.ceil(height / res) + 1;
+  let buf = fieldBuffers.get(ctx);
+  if (!buf || buf.width !== gw || buf.height !== gh) {
+    buf = document.createElement("canvas");
+    buf.width = gw;
+    buf.height = gh;
+    fieldBuffers.set(ctx, buf);
+  }
+  const g = buf.getContext("2d")!;
+  const img = g.createImageData(gw, gh);
+  const z = t * speed;
+  for (let j = 0; j < gh; j++) {
+    for (let i = 0; i < gw; i++) {
+      const x = (i * res / height) * freq;
+      const y = (j * res / height) * freq;
+      // Two octaves of value noise, folded at the middle for ridges.
+      const n = noise3(x, y, z, seed) * 0.7 + noise3(x * 2.1 + 5.3, y * 2.1 + 1.7, z * 1.3, seed + 1) * 0.3;
+      const ridge = Math.abs(2 * n - 1);
+      const v = Math.min(1, Math.max(0, Math.pow(hueLuma(ridge), gamma) + bias)) * brightness;
+      const o = (j * gw + i) * 4;
+      img.data[o] = img.data[o + 1] = img.data[o + 2] = v * 255;
+      img.data[o + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(buf, 0, 0, gw * res, gh * res);
+  ctx.restore();
 }

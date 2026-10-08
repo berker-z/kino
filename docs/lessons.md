@@ -28,6 +28,14 @@ Things we learned the hard way building the first scenes. Read this before writi
 
 **Draw backgrounds before foregrounds** when anything spans cells or rows (teletext double height). Row by row, the next row's background paints over the spill.
 
+## Borrowing from the HyperFrames registry
+
+`hyperframes catalog` lists about 390 blocks and components (Apache 2.0). Most are ads and UI mockups, but a few overlap with kino and their comments are worth reading: they cite measurements and hit the same seek problems we did. Read the source, take the idea, write our own version, and credit the item in the file header. So far: the beam velocity law (`oscilloscope-trace`), the foreignObject snapshot (`ordered-dither-pass`), the banded field (`halftone-field`).
+
+`hyperframes add` can't download inside the sandbox (Node ignores the proxy). To read an item, fetch it from `raw.githubusercontent.com/heygen-com/hyperframes/main/registry/{blocks,components}/<name>/<name>.html`.
+
+Skipped on purpose: `hw-boil` and the other hand-drawn jitter. Re-posing every few frames is exactly the jitter Berker rejected in the risograph.
+
 ## Thin lines and pixels
 
 Moving fine line art is where most of the time went. The short version:

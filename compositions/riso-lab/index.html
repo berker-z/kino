@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="8" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="8" data-track-index="0"></div>
+    </div>
+    <script>
+      // Lab for two borrowed pieces in riso: flowField in the blue drum (the
+      // halftone field), and a page set in HTML (htmlPlate) in the pink drum.
+      const W = 2560, H = 1440, DURATION = 8, FPS = 30;
+      const A = Kino.riso;
+      const clamp = (x) => Math.min(1, Math.max(0, x));
+      const ease = (x) => 1 - Math.pow(1 - clamp(x), 3);
+
+      const css = `
+        .pg { position: absolute; inset: 0; padding: 130px 160px; color: #fff; font-family: "Inter Tight"; box-sizing: border-box; }
+        .mast { display: flex; justify-content: space-between; font: 500 30px "IBM Plex Mono"; letter-spacing: .14em; text-transform: uppercase; border-bottom: 5px solid #fff; padding-bottom: 20px; }
+        .head { font-weight: 800; font-size: 240px; line-height: .86; letter-spacing: -.03em; margin: 80px 0 0; width: 1700px; text-wrap: balance; }
+        .foot { position: absolute; left: 160px; right: 160px; bottom: 130px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 80px; font-size: 40px; line-height: 1.3; font-weight: 600; }
+      `;
+      const html = `<div class="pg">
+        <div class="mast" data-part="mast"><span>Kino Quarterly</span><span>No. 03</span><span>Signal</span></div>
+        <h1 class="head" data-part="head">Every voice is mostly air</h1>
+        <div class="foot">
+          <div data-part="f1">The carbon microphone kept three hundred to three thousand cycles.</div>
+          <div data-part="f2">The switchboard kept whoever was listening.</div>
+          <div data-part="f3">The dish keeps the whole sky, and has to be told which whisper.</div>
+        </div>
+      </div>`;
+      const ORDER = [["mast", 0.3], ["head", 0.8], ["f1", 2.2], ["f2", 2.6], ["f3", 3.0]];
+
+      Kino.whenReady(A).then(() => Kino.htmlPlate({ html, css, width: W, height: H })).then((plate) => {
+        function paint(inkA, inkB, t) {
+          for (const c of [inkA, inkB]) { c.fillStyle = "#000"; c.fillRect(0, 0, W, H); }
+          Kino.paint.flowField(inkB, { width: W, height: H, t, freq: 1.4, speed: 0.15, seed: 3 });
+          for (const [name, at] of ORDER) {
+            const p = plate.parts[name];
+            const k = ease((t - at) / 0.8);
+            if (!p || k <= 0) continue;
+            inkA.save();
+            inkA.beginPath();
+            inkA.rect(p.x - 12, p.y - 30, (p.w + 24) * clamp((t - at) / 0.6), p.h + 60);
+            inkA.clip();
+            Kino.drawPart(inkA, plate, name, p.x, p.y + (1 - k) * 36);
+            inkA.restore();
+          }
+        }
+        const tl = gsap.timeline({ paused: true });
+        Kino.risoPass(document.getElementById("stage"), tl, { width: W, height: H, duration: DURATION, fps: FPS, paint, ...A.texture.riso });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>
