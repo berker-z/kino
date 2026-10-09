@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="../vendor/fonts.css" />
+    <script src="../vendor/gsap.min.js"></script>
+    <script src="../vendor/kino.js"></script>
+    <script src="../scene.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="6" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="6" data-track-index="0"></div>
+    </div>
+    <script>
+      // Cross-material proof for the typesetting page: the same scene.js,
+      // printed through risoPass. The word and rule go on one drum, the
+      // copy on the other; scene time runs 3-12 s at 1.5x. Nothing in the
+      // type source changes.
+      //   hyperframes render -c ab/ab.html -o ../../examples/xp-typesetting/ab-riso.mp4
+      const W = 2560, H = 1440, FPS = 30;
+      typesettingScene().then((scene) => {
+        const tl = gsap.timeline({ paused: true });
+        Kino.risoPass(document.getElementById("stage"), tl, {
+          width: W, height: H, duration: 6, fps: FPS,
+          paint: (a, b, t) => { const s = 3 + 1.5 * t; scene.paint(a, s, "word"); scene.paint(b, s, "copy"); },
+          ...Kino.riso.texture.riso,
+        });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <script src="scene.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #0d0c0b; }
+      #root { width: 100%; height: 100%; }
+      #stage canvas { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="12" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="12" data-track-index="0"></div>
+    </div>
+    <script>
+      // THE NAME OF THE THING (typesetting PoC). The page and its motion are
+      // scene.js; here it's painted straight onto warm black, no material:
+      // the type is the picture.
+      const W = 2560, H = 1440, DURATION = 12, FPS = 30;
+      typesettingScene().then((scene) => {
+        const tl = gsap.timeline({ paused: true });
+        const c = document.createElement("canvas");
+        c.width = W; c.height = H;
+        document.getElementById("stage").appendChild(c);
+        const g = c.getContext("2d");
+        Kino.timeDriver(tl, { duration: DURATION, fps: FPS }, (t) => {
+          g.fillStyle = "#0d0c0b";
+          g.fillRect(0, 0, W, H);
+          scene.paint(g, t);
+        });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

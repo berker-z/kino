@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="../vendor/fonts.css" />
+    <script src="../vendor/gsap.min.js"></script>
+    <script src="../vendor/kino.js"></script>
+    <script src="../scene.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; position: relative; }
+      .stage { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="9" data-width="2560" data-height="1440" data-fps="24">
+      <div id="raw" class="stage clip" data-start="0" data-duration="3" data-track-index="0"></div>
+      <div id="dither" class="stage clip" data-start="3" data-duration="3" data-track-index="1"></div>
+      <div id="screen" class="stage clip" data-start="6" data-duration="3" data-track-index="2"></div>
+    </div>
+    <script>
+      // Cross-material proof for the darkroom composite: the same scene.js
+      // frames (scene time 5.5-11.5 at double speed, so each segment spans
+      // the works, the dissolve and the type), with no material at all,
+      // through ditherPass (Bayer 8, three tones) and through screenPass
+      // (the cyanotype look). Nothing in scene.js changes.
+      //   hyperframes render -c ab/ab.html -o ../../examples/xp-darkroom/ab.mp4
+      const W = 2560, H = 1440, FPS = 24;
+      const sceneTime = (t) => 5.5 + 2 * t;
+      darkroomScene().then((paint) => {
+        const tl = gsap.timeline({ paused: true });
+        const raw = document.createElement("canvas");
+        raw.width = W; raw.height = H;
+        raw.style.cssText = "position:absolute;inset:0";
+        document.getElementById("raw").appendChild(raw);
+        const g = raw.getContext("2d");
+        Kino.timeDriver(tl, { start: 0, duration: 3, fps: FPS }, (t) => {
+          g.save(); g.fillStyle = "#000"; g.fillRect(0, 0, W, H); paint(g, sceneTime(t)); g.restore();
+        });
+        Kino.ditherPass(document.getElementById("dither"), tl, {
+          width: W, height: H, start: 3, duration: 3, fps: FPS, scale: 2,
+          method: "bayer-8", palette: "paper-3", prep: "levels",
+          paint: (ctx, t) => paint(ctx, sceneTime(t)),
+        });
+        Kino.screenPass(document.getElementById("screen"), tl, {
+          width: W, height: H, start: 6, duration: 3, fps: FPS,
+          paint: (ctx, t) => paint(ctx, sceneTime(t)),
+          ...Kino.cyanotype.texture.screen,
+        });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>
