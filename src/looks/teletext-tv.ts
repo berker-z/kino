@@ -1,5 +1,8 @@
 import type {MotionAesthetic} from "./types";
 
+// A one-off: teletext as a quick joke piece, not one of kino's visual
+// languages. Don't build on it or reach for it as a reference look.
+//
 // Teletext on a living-room TV (compositions/teletext). The picture is
 // built by the teletext source (eight colours, character cells, block
 // mosaics) and shown through screenPass in colour mode: shadow-mask grille,

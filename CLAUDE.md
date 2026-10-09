@@ -13,7 +13,7 @@ src/                 TypeScript library, bundled to window.Kino
   sources/           preparePlate, sunprint, htmlPlate, painters, spectrumFeed, networkTree, pen, beam, teletext, canvas type
   arrange/           sheetCamera, printRun, registerDrift, printStrip, tornWipe, lensPass
   passes/            screenPass (ramp / grille / lens / colour mode), risoPass (two-ink print), ditherPass (2-4 tone ordered dither), ditherCanvas
-  looks/             MotionAesthetic bundles: cyanotype, blueprint, phosphor, teletextTV, riso, signalDither, ...
+  looks/             MotionAesthetic bundles: cyanotype, blueprint, phosphor, riso, signalDither, ... (teletextTV is a one-off joke, not a core look)
   dom/               first-era GSAP + CSS pieces (motion, heroTitle, heroReveal, grain, crt...)
 scripts/build.mjs    bundles src/ and copies kino.js, gsap, fonts into every compositions/*/vendor/
 scripts/spectrum.py  per-frame spectrum of an audio file -> JSON or window.<NAME> JS

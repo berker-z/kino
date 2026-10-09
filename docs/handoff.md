@@ -6,7 +6,7 @@ Where kino stands after the session that went from "read the brief" to four fini
 
 Everything is committed and pushed (`berker-z/kino`, private). Dotfiles are pushed too.
 
-**The library** follows the pipeline: `signals → sources → arrange → passes → looks` (see `docs/architecture.md`). Five canvas looks are ready to use: `cyanotype`, `blueprint`, `phosphor`, `teletextTV`, `riso`. Older DOM pieces live in `src/dom/`.
+**The library** follows the pipeline: `signals → sources → arrange → passes → looks` (see `docs/architecture.md`). Four canvas looks are ready to use: `cyanotype`, `blueprint`, `phosphor`, `riso`, plus `ditherPass` for photos and footage. (`teletextTV` exists for a one-off joke piece; it isn't a core look.) Older DOM pieces live in `src/dom/`.
 
 **Reference pieces** (all on the same 27 s cut of "The Future of Speech", 3:51–4:43):
 

@@ -170,7 +170,7 @@ Done, local commits:
 
 Still open:
 
-11. Needs Berker: the teletext grille decision (`tt-ab.png`); teardown native-resolution measuring and the PROMOTE stage (write-protected skill folder); pushing these commits
+11. Needs Berker: teardown native-resolution measuring and the PROMOTE stage (write-protected skill folder); pushing these commits. (Teletext grille: settled, stays off. Berker: teletext is a one-off joke piece, not a core look.)
 12. When a second piece needs it: downbeats in `beatMap` (then shared bar helpers); `texture.ditherPass` in the look type; 1/zoom line widths in the pen kit
 13. If more screenPass speed is wanted: bloom (now ~16% of the frame)
 

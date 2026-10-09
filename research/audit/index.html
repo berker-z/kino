@@ -85,7 +85,7 @@
     <div class="stage comp"><b>sources</b><div class="q">what you see</div><ul><li>pen kit</li><li>plates, sunprint</li><li>htmlPlate</li><li>beam, teletext</li><li>painters, spectrumFeed</li><li>networkTree, type</li></ul></div>
     <div class="stage gram"><b>arrange</b><div class="q">how it moves</div><ul><li>sheetCamera</li><li>printRun, registerDrift</li><li>printStrip</li><li>tornWipe, lensPass</li></ul></div>
     <div class="stage mat"><b>pass</b><div class="q">what it's made of</div><ul><li>screenPass <span style="color:var(--good)">2.5× faster</span></li><li>risoPass</li><li>ditherPass</li><li>ditherCanvas</li></ul></div>
-    <div class="stage mat"><b>look</b><div class="q">material settings</div><ul><li>cyanotype, blueprint</li><li>phosphor, teletextTV</li><li>riso</li><li>signalDither</li></ul></div>
+    <div class="stage mat"><b>look</b><div class="q">material settings</div><ul><li>cyanotype, blueprint</li><li>phosphor</li><li>riso</li><li>signalDither</li></ul></div>
   </div>
   <div class="bands"><div class="band comp">composition: content, structure, sequencing</div><div class="band gram">motion grammar</div><div class="band mat">material</div></div>
   <p class="look"><b>A look today</b> = <span class="m">material</span> (carried in the look object) + <span class="g">motion grammar</span> (in prose and in which arrangements a composition picks) + typography and palette. <b>A composition</b> chooses all three, and none of them is locked to the others.</p>
@@ -97,7 +97,6 @@
   <tr><td>cyanotype</td><td>screenPass, Prussian ramp, grille</td><td>calm pushes, constant-speed strips, torn print, lens</td><td>screen-test</td></tr>
   <tr><td>blueprint</td><td>screenPass as print, no grille</td><td>one sheet, sheetCamera glides, pen draws in order</td><td>blueprint</td></tr>
   <tr><td>phosphor</td><td>screenPass, amber ramp, bulge</td><td>the signal is the picture; modes squash and reopen</td><td>oscilloscope</td></tr>
-  <tr><td>teletextTV</td><td>screenPass in colour mode</td><td>pages search and paint row by row</td><td>teletext</td></tr>
   <tr><td>riso</td><td>risoPass, pink + blue</td><td>printRun, registerDrift locking on the downbeat</td><td>risograph</td></tr>
   <tr><td>(dither)</td><td>ditherPass, Bayer 8, 2-4 tones</td><td>none of its own yet</td><td>dither-lab</td></tr>
 </table></div>
@@ -164,7 +163,8 @@
   <tr><td>Tests</td><td><code>npm test</code>: 26 tests on the frame clock, the music signals, the camera, the print run, the timing helpers. <code>scripts/smoke.sh</code>: end to end on a synthetic composition, and it fails if the grille ever stops working again.</td></tr>
   <tr><td>Bugs</td><td>The first frame was drawn twice per render. A beat grid with repeated beats would have hung a render forever. The bass follower returned NaN on silence. WebGL failures now say which pass failed and why.</td></tr>
   <tr><td>Taste notes</td><td><code>docs/lessons.md</code> splits global rules from per-look notes, so a deliberately harsh new look isn't banned by rules learned on calm cyanotype.</td></tr>
-  <tr><td>Your call</td><td>Teletext's grille: it was approved while the bug hid it, so it's off to keep it as approved. <a href="media/tt-ab.png">See it on</a> and say if you want it. And: push the 13 local commits?</td></tr>
+  <tr><td>Teletext</td><td>A one-off joke piece, not a look. It isn't in the table above; its grille stays off, as approved.</td></tr>
+  <tr><td>Your call</td><td>Push the local commits?</td></tr>
 </table></div>
 
 </main>

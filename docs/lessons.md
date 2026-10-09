@@ -78,7 +78,7 @@ Split in two on purpose. The global rules have held across every look so far. Th
 - **Cyanotype:** calm pushes, constant-speed strips, physical transitions. `iceOnNavy` (`#BFD4FF` on `#0A1022`) is the favourite palette so far (from the waves piece).
 - **Blueprint:** one sheet and a roaming camera, no cuts; everything drawn in drafting order.
 - **Phosphor:** the picture is the signal; modes squash to a line and reopen.
-- **Teletext:** pages search and paint row by row; steps, not scrolls.
+- **Teletext:** a one-off joke, not a visual language. Keep it light; don't build on it.
 - **Riso:** one print run; inks drift off register across a bar and land on the downbeat. Smooth drift only.
 - **Dither:** Bayer 8 first, blue noise second; three tones beat two; the fake line engraving was a dead end.
 - **Signal dither (the first waves video):** calm beats busy; when it felt jittery, slowing down and removing detail fixed it.

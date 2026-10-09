@@ -89,10 +89,11 @@ Kino.screenPass(stage, tl, {width, height, duration, fps, paint, ...Kino.bluepri
 | `cyanotype` | screenPass, Prussian ramp, grille | calm pushes, sliding strips, torn and lens transitions |
 | `blueprint` | screenPass as print, no grille | one sheet, camera glides, everything drawn by the pen |
 | `phosphor` | screenPass, amber ramp, bulged tube | the picture is the signal; modes squash and reopen |
-| `teletextTV` | screenPass in colour mode | pages that search and paint row by row; steps, not scrolls |
 | `riso` | risoPass, pink + blue | one print run; inks drift and land on the downbeat |
 | `signalDither` | ditherCanvas | the first waves video |
 | `brutalistEditorial`, `nordTerminal` | DOM | the first milestone's hero scenes |
+
+`teletextTV` also exists, but it's a joke: one quick funny piece, not one of kino's visual languages. Don't build on it, recommend it, or treat it as a reference look. The teletext source is there for that piece and for experiments.
 
 ### `dom/`: the first era
 GSAP motion on HTML elements: `fade`, `slide`, `stagger`, `maskReveal`, `typewriter`, `animatedText`, `heroTitle`, `heroReveal`, and CSS effects (`grain`, `grid`, `vignette`, `crt`). They work and the hero compositions use them, but nothing since the waves has. New work happens in canvas.
@@ -106,7 +107,6 @@ Because sources paint grayscale and passes decide the medium, most combinations 
 
 - **The pen kit under cyanotype.** A self-drawing technical drawing filmed off a Trinitron: `pen` + `sheetCamera` into `screenPass` with `...Kino.cyanotype.texture.screen`.
 - **The beam in riso.** Draw `beam` into the pink separation over a halftone graticule in blue. The scope, printed.
-- **Ridgelines or the network as teletext.** Paint `spectrumFeed` or `networkTree` into a small canvas and feed it to `sixels`, then `mosaic` it onto a page.
 - **The print run, cyanotype.** `printRun` scrolling `sunprint`s through the Trinitron instead of halftone separations.
 - **The sheet camera over a teletext wall.** Many teletext pages laid out on one canvas, the camera gliding between them.
 
