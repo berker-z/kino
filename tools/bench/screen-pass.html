@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>screenPass Benchmark</title>
+<!-- Run: scripts/bench-screen-pass.sh (serves the repo, runs this in the
+     same headless Chrome as hyperframes, prints a table). Times one frame of
+     each variant with readPixels as a sync point, so GPU work is counted. -->
+<script src="../../node_modules/gsap/dist/gsap.min.js"></script>
+<script src="../../dist/kino.js"></script>
+</head>
+<body>
+<pre id="out"></pre>
+<script>
+  const FRAMES = +(new URLSearchParams(location.search).get("frames") || 6);
+  const sizes = [[1920, 1080], [2560, 1440]];
+  const look = Kino.cyanotype.texture.screen;
+  const variants = [
+    ["full cyanotype", {}],
+    ["grille off", { grille: 0 }],
+    ["blur radius 0 (taps still run)", { softness: 0, edgeBlur: 0, fringe: 0 }],
+    ["bloom off", { bloom: 0 }],
+    ["grain off", { grain: 0 }],
+  ];
+
+  function card(ctx, W, H, t) {
+    const g = ctx.createLinearGradient(0, 0, W, 0);
+    g.addColorStop(0, "#000"); g.addColorStop(1, "#fff");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H * 0.5);
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
+    for (let x = 0; x <= W; x += 40) { ctx.beginPath(); ctx.moveTo(x + t, H * 0.5); ctx.lineTo(x + t, H); ctx.stroke(); }
+    ctx.fillStyle = "#fff"; ctx.font = "800 140px sans-serif"; ctx.fillText("BENCH", 100 + t * 20, H * 0.8);
+  }
+
+  const rows = [];
+  const now = () => performance.now();
+  for (const [W, H] of sizes) {
+    // CPU paint alone, and paint + texture upload, on a plain canvas.
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const cx = c.getContext("2d");
+    let t0 = now();
+    for (let f = 0; f < FRAMES; f++) { cx.fillStyle = "#000"; cx.fillRect(0, 0, W, H); card(cx, W, H, f); cx.getImageData(0, 0, 1, 1); }
+    rows.push([`${W}x${H}`, "paint only (canvas 2D)", (now() - t0) / FRAMES]);
+    const gc = document.createElement("canvas"); gc.width = W; gc.height = H;
+    const gl = gc.getContext("webgl2");
+    const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+    const px = new Uint8Array(4);
+    t0 = now();
+    for (let f = 0; f < FRAMES; f++) {
+      cx.fillStyle = "#000"; cx.fillRect(0, 0, W, H); card(cx, W, H, f);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    }
+    rows.push([`${W}x${H}`, "paint + texture upload", (now() - t0) / FRAMES]);
+
+    for (const [name, over] of variants) {
+      const stage = document.createElement("div");
+      document.body.append(stage);
+      const tl = gsap.timeline({ paused: true });
+      const canvas = Kino.screenPass(stage, tl, { width: W, height: H, duration: 10, fps: 30, paint: (ctx, t) => card(ctx, W, H, t * 30), ...look, ...over });
+      const g2 = canvas.getContext("webgl2");
+      tl.seek(1 / 30, true); g2.readPixels(0, 0, 1, 1, g2.RGBA, g2.UNSIGNED_BYTE, px); // warm up (shader compile)
+      t0 = now();
+      for (let f = 2; f < 2 + FRAMES; f++) { tl.seek(f / 30, true); g2.readPixels(0, 0, 1, 1, g2.RGBA, g2.UNSIGNED_BYTE, px); }
+      rows.push([`${W}x${H}`, `screenPass: ${name}`, (now() - t0) / FRAMES]);
+      stage.remove();
+    }
+  }
+  const renderer = (() => {
+    const gl = document.createElement("canvas").getContext("webgl2");
+    const ext = gl.getExtension("WEBGL_debug_renderer_info");
+    return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  })();
+  const text = [`renderer: ${renderer}`, `frames per variant: ${FRAMES}`, ...rows.map(([s, n, ms]) => `${s}\t${ms.toFixed(1).padStart(8)} ms\t${n}`)].join("\n");
+  document.getElementById("out").textContent = text;
+  console.log("BENCH\n" + text);
+</script>
+</body>
+</html>
