@@ -20,6 +20,10 @@ Everything random is a hash of (pixel, seed, generation).
 
 The first threshold (0.44) made fine print drop out into rows of dots by copy 6: a light copy. At 0.37 ink spreads a little each pass, so the fine print fattens, counters close and the labels in the diagram fill in, while the title (330 px Anton) stays readable at copy 8. That's the trajectory the brief asked for, and it's what most real generation loss looks like. The first `solidLoss` (0.35 from a 9 px measure) turned the title itself mottled grey at copy 1; it now only bites inside genuinely large solids. The first streak density drew two dozen full-height grey lines from copy 1, which read as ornament; it's now a few faint broken ones.
 
+## Cost
+
+All of it is at load: about 17 s for eight copies of a 2400×3394 page. After that THE TESTAMENT is plates and a camera: it rendered in 49 s, and the file is 19 MB because nothing changes frame to frame except the camera and the arriving copy. (The first render had a glowing copier light bar riding the edge; Berker hated it and it's gone.)
+
 ## Tests
 
 Unit: same seed same copy, different seed different copy; output stays in 0-1 for extreme settings; after 6 copies hairline contrast falls below 60% of the original while a 10 px bar keeps more than 75% density and a solid's interior is dirty but not gone; greys collapse out of the mid band within 3 copies; no visible speck (≥ 1/255) 20 px from any ink with streaks off; cost (about 0.35-0.45 s for a 1200×1700 sheet in node).

@@ -9,10 +9,11 @@
 // once at load. Nothing is random per frame: the toner is fixed to the
 // sheet, so the camera can travel over it.
 //
-// The event is the copying itself. Each new copy arrives behind the
-// copier's light bar sweeping down the sheet (the scan direction, which is
-// also the direction of the streaks): above the bar is the new copy, below
-// it the old one. A small counter, set crisp above the page, says which.
+// The event is the copying itself. Each new copy arrives down the sheet
+// behind a plain edge (the scan direction, which is also the direction of
+// the streaks): above the edge is the new copy, below it the old one. A
+// glowing light bar rode the edge in the first render; Berker didn't like
+// it, so it's gone. A small counter, set crisp above the page, says which.
 //
 //   0-3     the original, the camera on the title
 //   3.0     copy 1        4.6  copy 2       6.2  copy 4 (3 is skipped)
@@ -163,16 +164,6 @@
       if (sweep) {
         const y = Math.round(easeInOut(sweep.f) * PH);
         sg.drawImage(copies[sweep.gen], 0, 0, PW, y, 0, 0, PW, y);
-        // The lamp: a bright bar with a soft green-white falloff.
-        const gr = sg.createLinearGradient(0, y - 140, 0, y + 30);
-        gr.addColorStop(0, "rgba(230,255,240,0)");
-        gr.addColorStop(0.8, "rgba(230,255,240,0.55)");
-        gr.addColorStop(0.95, "rgba(250,255,252,0.95)");
-        gr.addColorStop(1, "rgba(230,255,240,0)");
-        sg.globalCompositeOperation = "lighter";
-        sg.fillStyle = gr;
-        sg.fillRect(0, y - 140, PW, 170);
-        sg.globalCompositeOperation = "source-over";
       }
       return {done, sweep};
     }
