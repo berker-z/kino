@@ -28,5 +28,9 @@ export function timeDriver(
     },
   };
   timeline.fromTo(target, {at: 0}, {at: duration, duration, ease: "none"}, start);
-  render(0, 0);
+  // fromTo renders its start value immediately, which already paints frame 0
+  // through the setter. Going through the setter again (rather than calling
+  // render directly) keeps the guarantee that frame 0 is painted at setup
+  // without painting it twice.
+  target.at(0);
 }
