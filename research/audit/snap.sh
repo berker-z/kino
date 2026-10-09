@@ -16,6 +16,7 @@ times_for() {
     hero-*) echo 1,3 ;;
     dither-lab) echo 1.5,7.5,18 ;;
     html-lab|riso-lab) echo 1,7.5 ;;
+    xp-*|smoke) echo 1,2,3.5,5,7 ;;
     *) echo 3,12,20 ;;
   esac
 }

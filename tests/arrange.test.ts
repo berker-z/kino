@@ -79,3 +79,24 @@ test("noise: deterministic and in range", () => {
   }
   assert.equal(noise3(1.5, 2.5, 0.7, 3), noise3(1.5, 2.5, 0.7, 3));
 });
+
+test("timing helpers: clamped, monotonic, exact at the ends", async () => {
+  const {clamp, progress, smooth, easeOut, easeInOut} = await import("../src/utils/timing");
+  assert.equal(clamp(-1), 0);
+  assert.equal(clamp(2), 1);
+  assert.equal(progress(5, 4, 2), 0.5);
+  assert.equal(progress(3, 4, 2), 0);
+  assert.equal(progress(9, 4, 2), 1);
+  assert.equal(progress(4, 4, 0), 1, "a zero-length window is a step at its start");
+  for (const f of [smooth, easeOut, easeInOut]) {
+    assert.equal(f(0), 0);
+    assert.equal(f(1), 1);
+    assert.equal(f(-5), 0);
+    assert.equal(f(5), 1);
+    let prev = -1;
+    for (let x = 0; x <= 1; x += 0.01) {
+      assert.ok(f(x) >= prev, "monotonic");
+      prev = f(x);
+    }
+  }
+});

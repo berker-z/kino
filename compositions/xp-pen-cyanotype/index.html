@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="8" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="8" data-track-index="0"></div>
+    </div>
+    <script>
+      // Experiment A (ARCHITECTURE_AUDIT.md): a source from one look under
+      // another look's material. The pen kit and sheet camera come from the
+      // blueprint piece; the material is the cyanotype screen. Nothing new is
+      // implemented here; the point is to count the glue.
+      const W = 2560, H = 1440, DURATION = 8, FPS = 30;
+      const P = Kino.pen;
+      const prog = Kino.progress;
+
+      // The sheet: a radio dish in elevation. Sheet units = px at zoom 1.
+      const cx = 2400, cy = 1500;
+      const cam = Kino.sheetCamera([
+        { at: 0, dur: 0, x: 2400, y: 1450, z: 0.55, drift: [6, 0, 0.004] },
+        { at: 2.6, dur: 1.6, x: 2900, y: 1250, z: 1.15, drift: [-8, 3, 0.006] },
+        { at: 6.0, dur: 1.6, x: 2400, y: 1500, z: 0.62 },
+      ]);
+
+      function sheet(ctx, t) {
+        ctx.lineCap = ctx.lineJoin = "round";
+        ctx.strokeStyle = "#f2f2f2";
+        // Border and grid, drafted first.
+        ctx.lineWidth = 3;
+        P.rectP(ctx, 300, 300, 4200, 2400, prog(t, 0, 1.2));
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 0.35;
+        for (let x = 600; x < 4500; x += 300) P.lineP(ctx, x, 300, x, 2700, prog(t, 0.2 + x / 9000, 0.6));
+        ctx.globalAlpha = 1;
+        // The dish: a shallow paraboloid in section, feed arm, mount.
+        ctx.lineWidth = 6;
+        const dish = Array.from({ length: 41 }, (_, i) => { const u = (i / 40) * 2 - 1; return [cx + u * 900, cy - 520 + u * u * 300]; });
+        P.polyP(ctx, dish, prog(t, 0.8, 1.4));
+        P.lineP(ctx, cx - 900, cy - 220, cx + 900, cy - 220, prog(t, 1.4, 0.8));
+        ctx.lineWidth = 4;
+        P.lineP(ctx, cx - 600, cy - 300, cx, cy - 980, prog(t, 2.0, 0.6));
+        P.lineP(ctx, cx + 600, cy - 300, cx, cy - 980, prog(t, 2.1, 0.6));
+        P.ellipseP(ctx, cx, cy - 990, 34, 34, prog(t, 2.5, 0.4));
+        ctx.lineWidth = 5;
+        P.polyP(ctx, [[cx - 140, cy - 220], [cx - 220, cy + 700], [cx + 220, cy + 700], [cx + 140, cy - 220]], prog(t, 2.6, 1.0));
+        const base = new Path2D();
+        base.moveTo(cx - 220, cy + 700); base.lineTo(cx + 220, cy + 700); base.lineTo(cx + 140, cy - 220); base.lineTo(cx - 140, cy - 220); base.closePath();
+        ctx.lineWidth = 2;
+        P.hatch(ctx, base, [cx - 230, cy - 230, 460, 940], prog(t, 3.4, 1.2), 26);
+        P.lineP(ctx, cx - 700, cy + 700, cx + 700, cy + 700, prog(t, 3.0, 0.6));
+        // Dimensions and callouts, written as the camera arrives.
+        P.dim(ctx, cx - 900, cy + 120, cx + 900, cy + 120, "D = 64 M", prog(t, 4.0, 0.9));
+        P.dim(ctx, cx + 1050, cy - 980, cx + 1050, cy - 220, "F = 26 M", prog(t, 4.4, 0.9));
+        P.balloon(ctx, cx, cy - 990, cx + 520, cy - 1250, 1, prog(t, 4.8, 0.8));
+        P.balloon(ctx, cx - 600, cy - 420, cx - 1150, cy - 900, 2, prog(t, 5.0, 0.8));
+        P.balloon(ctx, cx + 180, cy + 300, cx + 900, cy + 520, 3, prog(t, 5.2, 0.8));
+        P.penLabel(ctx, "FIG. 1   RECEIVER, ELEVATION", 380, 2620, { size: 44, p: prog(t, 5.6, 0.8) });
+        P.penLabel(ctx, "1 FEED   2 SURFACE   3 MOUNT", 380, 2560, { size: 34, p: prog(t, 6.0, 0.8) });
+      }
+
+      Kino.whenReady(Kino.cyanotype).then(() => {
+        function paint(ctx, t) {
+          ctx.save();
+          cam.apply(ctx, t, W, H);
+          sheet(ctx, t);
+          ctx.restore();
+        }
+        const tl = gsap.timeline({ paused: true });
+        Kino.screenPass(document.getElementById("stage"), tl, { width: W, height: H, duration: DURATION, fps: FPS, paint, ...Kino.cyanotype.texture.screen });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

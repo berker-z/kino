@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="8" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="8" data-track-index="0"></div>
+    </div>
+    <script>
+      // Experiment B (ARCHITECTURE_AUDIT.md): an arrangement from one look
+      // over another look's source. The sheet camera comes from the blueprint
+      // piece; the source and material are teletext's. Four pages laid out
+      // as one wall, the camera gliding between them instead of page cuts.
+      const W = 2560, H = 1440, DURATION = 8, FPS = 30;
+      const TT = Kino.teletext();
+      const C = Kino.teletextColors;
+      const PW = TT.cols * TT.cellWidth, PH = TT.top + TT.rows * TT.cellHeight;
+      const GAP = 240;
+      const at = (i) => [(i % 2) * (PW + GAP), Math.floor(i / 2) * (PH + GAP)];
+
+      function page(i, t) {
+        const pg = TT.blankPage();
+        TT.text(pg, 0, 0, ` P10${i}  KINO TELETEXT  ${String(i + 1).padStart(2, "0")}:0${Math.floor(t) % 10}`, C.white);
+        TT.fill(pg, 0, 2, 40, 3, [C.blue, C.red, C.green, C.magenta][i]);
+        TT.text(pg, 2, 3, ["SIGNAL", "NEWS", "WEATHER", "INDEX"][i], C.yellow, null, true);
+        for (let r = 0; r < 8; r++) {
+          TT.text(pg, 2, 7 + r * 2, ["CARRIER", "BAND", "GAIN", "PHASE", "NOISE", "TONE", "SYNC", "LOCK"][r].padEnd(12, ".") + String((i * 37 + r * 13 + Math.floor(t * 2)) % 100).padStart(3), r % 2 ? C.cyan : C.white);
+        }
+        // A mosaic disc, the only picture.
+        TT.mosaic(pg, 24, 7, 14, 14, (sx, sy) => {
+          const dx = sx / 28 - 0.5, dy = sy / 42 - 0.5;
+          return Math.hypot(dx, dy * 1.2) < 0.42 ? 1 : 0;
+        }, () => [C.cyan, C.yellow, C.green, C.red][i]);
+        TT.fill(pg, 0, 23, 40, 1, C.blue);
+        TT.text(pg, 1, 23, " NEXT PAGE  P10" + ((i + 1) % 4), C.white);
+        return pg;
+      }
+
+      // The camera starts wide on the wall, then visits pages in turn.
+      const z = 1;
+      const shot = (i, a, d) => { const [x, y] = at(i); return { at: a, dur: d, x: x + PW / 2, y: y + PH / 2, z }; };
+      const cam = Kino.sheetCamera([
+        { at: 0, dur: 0, x: PW + GAP / 2, y: PH + GAP / 2, z: 0.42, drift: [0, 0, 0.01] },
+        shot(0, 1.2, 1.1), shot(1, 3.0, 1.0), shot(3, 4.8, 1.0),
+        { at: 6.6, dur: 1.2, x: PW + GAP / 2, y: PH + GAP / 2, z: 0.42 },
+      ]);
+
+      Kino.whenReady(Kino.teletextTV).then(() => {
+        function paint(ctx, t) {
+          ctx.save();
+          cam.apply(ctx, t, W, H);
+          for (let i = 0; i < 4; i++) {
+            const [x, y] = at(i);
+            ctx.save();
+            ctx.translate(x, y);
+            TT.drawPage(ctx, page(i, t));
+            ctx.restore();
+          }
+          ctx.restore();
+        }
+        const tl = gsap.timeline({ paused: true });
+        Kino.screenPass(document.getElementById("stage"), tl, { width: W, height: H, duration: DURATION, fps: FPS, paint, ...Kino.teletextTV.texture.screen });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

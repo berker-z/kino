@@ -62,6 +62,7 @@ export * as pen from "./sources/pen";
 export {beam, beamText} from "./sources/beam";
 export type {BeamOptions} from "./sources/beam";
 export {htmlPlate, drawPart} from "./sources/html-plate";
+export {clamp, progress, smooth, easeOut, easeInOut} from "./utils/timing";
 export type {HtmlPlate, HtmlPlateOptions, PartBox} from "./sources/html-plate";
 export {teletext, teletextColors, sixels, sixelText} from "./sources/teletext";
 export type {Cell as TeletextCell, Page as TeletextPage} from "./sources/teletext";
