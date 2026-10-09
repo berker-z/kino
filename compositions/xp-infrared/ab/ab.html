@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="../vendor/fonts.css" />
+    <script src="../vendor/gsap.min.js"></script>
+    <script src="../vendor/kino.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; position: relative; }
+      #root > div { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="6" data-width="2560" data-height="1440" data-fps="24"></div>
+    <script>
+      // Mechanical A/B for infraredPass, 1 s each, default settings:
+      //   0  a daylight field, line of poplars, sky and clouds: raw
+      //   1  global pass, colour proxies only
+      //   2  the same with authored mattes (sky above the tree line, foliage below)
+      //   3  the authored mattes themselves (red foliage, blue sky)
+      //   4  a non-vegetation source: a mossy stone cloister, raw
+      //   5  the same through the global pass (moss reads as foliage)
+      const W = 2560, H = 1440, FPS = 24;
+      const root = document.getElementById("root");
+      const stage = (start) => { const d = document.createElement("div"); d.className = "clip"; Object.assign(d.dataset, { start, duration: 1, trackIndex: start }); root.appendChild(d); return d; };
+      const load = (f) => { const i = new Image(); i.src = "../assets/" + f; return i.decode().then(() => i); };
+      const cover = (img) => (ctx) => { const s = Math.max(W / img.naturalWidth, H / img.naturalHeight); ctx.drawImage(img, (W - img.naturalWidth * s) / 2, (H - img.naturalHeight * s) / 2, img.naturalWidth * s, img.naturalHeight * s); };
+      // Mattes authored for field.jpg as drawn by cover(): the tree line
+      // and mountains sit between y 520 and 710; sky above, grass below.
+      function fieldMattes(ctx) {
+        const sky = ctx.createLinearGradient(0, 500, 0, 545); sky.addColorStop(0, "#0000ff"); sky.addColorStop(1, "#000000");
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 545);
+        const leaf = ctx.createLinearGradient(0, 600, 0, 640); leaf.addColorStop(0, "rgba(255,0,0,0)"); leaf.addColorStop(1, "rgba(255,0,0,1)");
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = leaf; ctx.fillRect(0, 600, W, H - 600);
+      }
+      Promise.all([load("field.jpg"), load("cloister.jpg")]).then(([field, cloister]) => {
+        const tl = gsap.timeline({ paused: true });
+        const pass = (start, paint, o = {}) => Kino.infraredPass(stage(start), tl, { width: W, height: H, start, duration: 1, fps: FPS, paint: (ctx) => paint(ctx), ...o });
+        pass(0, cover(field), { strength: 0 });
+        pass(1, cover(field));
+        pass(2, cover(field), { regions: fieldMattes });
+        pass(3, fieldMattes, { strength: 0 });
+        pass(4, cover(cloister), { strength: 0 });
+        pass(5, cover(cloister));
+        window.__timelines["main"] = tl;
+      }).catch((e) => console.error("ab failed:", e && e.stack || e));
+    </script>
+  </body>
+</html>

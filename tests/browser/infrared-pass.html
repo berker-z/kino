@@ -1,0 +1,105 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>infraredPass</title><script src="../../node_modules/gsap/dist/gsap.min.js"></script><script src="../../dist/kino.js"></script><script src="harness.js"></script></head>
+<body><div id="stage" style="display:none"></div><script>
+const W = 480, H = 270;
+// A synthetic landscape: blue sky with a white cloud on top, a band of
+// textured green "foliage", a grey ramp, saturated R/G/B patches, a grey
+// stone block.
+function scene(ctx) {
+  ctx.fillStyle = "#5d8fd6"; ctx.fillRect(0, 0, W, 90);
+  ctx.fillStyle = "#f4f4f2"; ctx.beginPath(); ctx.ellipse(120, 45, 60, 22, 0, 0, 7); ctx.fill();
+  for (let y = 90; y < 160; y += 3) for (let x = 0; x < W; x += 3) {
+    const v = 0.5 + 0.5 * Math.sin(x * 0.37 + y * 0.61) * Math.cos(x * 0.13 - y * 0.29);
+    ctx.fillStyle = `rgb(${Math.round(40 + 50 * v)},${Math.round(90 + 80 * v)},${Math.round(25 + 25 * v)})`;
+    ctx.fillRect(x, y, 3, 3);
+  }
+  const g = ctx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "#000"); g.addColorStop(1, "#fff");
+  ctx.fillStyle = g; ctx.fillRect(0, 160, W, 40);
+  ["#d02020", "#20b030", "#2040e0"].forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(20 + i * 70, 210, 60, 50); });
+  ctx.fillStyle = "#8a8782"; ctx.fillRect(260, 210, 200, 50);
+}
+function ir(opts = {}, paint = scene) {
+  const host = document.createElement("div"); document.getElementById("stage").appendChild(host);
+  const tl = gsap.timeline({paused: true});
+  const out = Kino.infraredPass(host, tl, {width: W, height: H, duration: 2, fps: 24, paint: (ctx) => paint(ctx), ...opts});
+  return (t) => { tl.seek(t); const c = canvas(W, H); c.getContext("2d").drawImage(out, 0, 0); return c; };
+}
+const source = () => { const c = canvas(W, H); const g = c.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, W, H); scene(g); return c; };
+const region = (c, x, y, w, h) => c.getContext("2d").getImageData(x, y, w, h).data;
+const mean = (d) => { let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i + 1]; return s / (d.length / 4); };
+const sd = (d) => { const m = mean(d); let s = 0; for (let i = 0; i < d.length; i += 4) s += (d[i + 1] - m) ** 2; return Math.sqrt(s / (d.length / 4)); };
+
+test("strength 0 is an exact passthrough", () => {
+  const d = maxDiff(pixels(show("source", source())), pixels(show("infrared strength 0", ir({strength: 0})(1))));
+  assert(d === 0, "max diff " + d);
+});
+test("defaults on colour proxies alone: foliage bright, sky dark, cloud stays light", () => {
+  const f = show("infrared defaults, no mattes", ir()(1));
+  const s = source();
+  const leaf = mean(region(f, 200, 100, 200, 50)), sky = mean(region(f, 300, 10, 150, 60)), cloud = mean(region(f, 105, 40, 30, 10));
+  const leafRaw = mean(region(s, 200, 100, 200, 50));
+  assert(leaf > leafRaw + 40, `foliage ${leafRaw.toFixed(0)} -> ${leaf.toFixed(0)}`);
+  assert(sky < 40, `sky ${sky.toFixed(0)}`);
+  assert(cloud > 180, `cloud ${cloud.toFixed(0)}`);
+  return `foliage ${leafRaw.toFixed(0)} -> ${leaf.toFixed(0)}, sky ${sky.toFixed(0)}, cloud ${cloud.toFixed(0)}`;
+});
+test("foliage keeps its texture (not flat white), even with a heavy lift", () => {
+  const s = source();
+  // The shoulder compresses texture as the lift rises; at the default it
+  // keeps most of it, at an extreme lift about half. Never flat.
+  const notes = [];
+  for (const [lift, keep] of [[0.6, 0.7], [1, 0.45]]) {
+    const f = ir({foliageLift: lift})(1);
+    const d = region(f, 200, 100, 200, 50);
+    const m = mean(d), v = sd(d), vRaw = sd(region(s, 200, 100, 200, 50));
+    assert(m < 245 && v > vRaw * keep, `lift ${lift}: mean ${m.toFixed(0)}, sd ${v.toFixed(1)} vs raw ${vRaw.toFixed(1)}`);
+    notes.push(`lift ${lift}: mean ${m.toFixed(0)}, texture sd ${v.toFixed(1)} of raw ${vRaw.toFixed(1)}`);
+  }
+  return notes.join("; ");
+});
+test("grey ramp stays monotone; saturated patches stay distinct; output finite and opaque", () => {
+  const f = ir()(1);
+  const row = region(f, 0, 180, W, 1);
+  for (let x = 8; x < W; x += 8) assert(row[x * 4 + 1] >= row[(x - 8) * 4 + 1], `ramp not monotone at x=${x}`);
+  const p = [0, 1, 2].map((i) => mean(region(f, 30 + i * 70, 220, 40, 30)));
+  assert(Math.max(...p) - Math.min(...p) > 20, "R/G/B patches collapsed to one grey: " + p.map((v) => v.toFixed(0)));
+  const all = pixels(f);
+  for (let i = 3; i < all.length; i += 4) if (all[i] !== 255) throw new Error("not opaque");
+  return `R/G/B patches ${p.map((v) => v.toFixed(0)).join(" / ")}`;
+});
+test("mattes: a feathered foliage matte lifts exactly where it is drawn", () => {
+  // The stone block is grey, so the proxies leave it alone; a matte over its left half says it's foliage.
+  const regions = (ctx) => { const g = ctx.createLinearGradient(330, 0, 350, 0); g.addColorStop(0, "#ff0000"); g.addColorStop(1, "#000000"); ctx.fillStyle = g; ctx.fillRect(260, 210, 90, 50); ctx.fillStyle = "#f00"; ctx.fillRect(260, 210, 70, 50); };
+  const f = show("foliage matte over the left of the stone block", ir({regions})(1));
+  const n = ir()(1);
+  const lifted = mean(region(f, 270, 220, 40, 30)) - mean(region(n, 270, 220, 40, 30));
+  const right = mean(region(f, 380, 220, 60, 30)) - mean(region(n, 380, 220, 60, 30));
+  const row = region(f, 320, 235, 40, 1);
+  const edge = [0, 10, 20, 30, 39].map((x) => row[x * 4 + 1]);
+  assert(lifted > 30 && Math.abs(right) <= 1, `matte lift ${lifted.toFixed(0)}, outside ${right.toFixed(1)}`);
+  assert(edge[0] >= edge[2] && edge[2] >= edge[4] && edge[0] - edge[4] > 20, "feather not graded: " + edge);
+  return `lift inside ${lifted.toFixed(0)}, outside ${right.toFixed(1)}, feather ${edge.join(" ")}`;
+});
+test("a sky matte darkens a grey overcast sky the proxies can't recognise", () => {
+  const overcast = (ctx) => { scene(ctx); ctx.fillStyle = "#b4b6b8"; ctx.fillRect(0, 0, W, 90); };
+  const plain = ir({}, overcast)(1), matted = ir({regions: (ctx) => { ctx.fillStyle = "#00f"; ctx.fillRect(0, 0, W, 90); }}, overcast)(1);
+  show("overcast, no matte", plain); show("overcast, sky matte", matted);
+  const a = mean(region(plain, 10, 10, 400, 60)), b = mean(region(matted, 10, 10, 400, 60));
+  assert(a > 120 && b < a / 2.2, `overcast sky ${a.toFixed(0)} without matte, ${b.toFixed(0)} with`);
+  return `overcast sky: ${a.toFixed(0)} from colour alone, ${b.toFixed(0)} with a matte`;
+});
+test("static source: same frame after out-of-order seeks", () => {
+  const f = ir();
+  const a = f(0.5); f(1.9); f(0.1);
+  assert(maxDiff(pixels(a), pixels(f(0.5))) === 0);
+});
+test("cost per frame at 2560x1440 (this backend)", () => {
+  const host = document.createElement("div"); document.getElementById("stage").appendChild(host);
+  const tl = gsap.timeline({paused: true});
+  Kino.infraredPass(host, tl, {width: 2560, height: 1440, duration: 2, fps: 24, paint: (ctx) => { ctx.save(); ctx.scale(2560 / W, 1440 / H); scene(ctx); ctx.restore(); }});
+  const t0 = performance.now();
+  for (let i = 1; i <= 3; i++) tl.seek(i * 0.3);
+  return `${((performance.now() - t0) / 3).toFixed(0)} ms/frame including the painter`;
+});
+run();
+</script></body></html>
