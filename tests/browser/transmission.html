@@ -1,0 +1,61 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>transmissionComposite</title><script src="../../dist/kino.js"></script><script src="harness.js"></script></head>
+<body><script>
+const W = 320, H = 180;
+// Density: a ramp left to right (clear to dense) in the top half, a dense
+// grid of "cames" over clear glass in the bottom half.
+function density(ctx) {
+  const g = ctx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "#000"); g.addColorStop(1, "#fff");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, 90);
+  ctx.fillStyle = "#fff";
+  for (let x = 0; x < W; x += 40) ctx.fillRect(x, 90, 6, 90);
+}
+const white = (ctx) => { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H); };
+const grey = (ctx) => { ctx.fillStyle = "#808080"; ctx.fillRect(0, 0, W, H); };
+const make = (o) => Kino.transmissionComposite({width: W, height: H, density, backlight: white, extinction: 4, ...o});
+const render = (p, t = 0) => { const c = canvas(W, H); p(c.getContext("2d"), t); return c; };
+
+test("zero extinction: full transmission of the backlight everywhere", () => {
+  const c = show("extinction 0", render(make({extinction: 0, backlight: grey})));
+  for (const [x, y] of [[5, 40], [300, 40], [42, 130], [20, 130]]) assert(near(px(c, x, y), [128, 128, 128, 255], 1), `at ${x},${y}: ${px(c, x, y)}`);
+});
+test("constant light: output falls as density rises; cames stay dark inside the light", () => {
+  const c = show("extinction 4, white backlight", render(make({})));
+  const row = c.getContext("2d").getImageData(0, 40, W, 1).data;
+  for (let x = 20; x < W; x += 20) assert(row[x * 4] <= row[(x - 20) * 4], `not falling at x=${x}`);
+  // A came (density 1) at extinction 4 passes e^-4 = 1.8% of the light: sRGB 37.
+  const lin = Math.exp(-4), want = Math.round(255 * (1.055 * lin ** (1 / 2.4) - 0.055));
+  assert(Math.abs(px(c, 2, 130)[0] - want) <= 2 && px(c, 20, 130)[0] > 240, `came ${px(c, 2, 130)[0]} (want ${want}), clear glass ${px(c, 20, 130)[0]}`);
+  return `ramp ${row[4 * 2]} -> ${row[4 * (W - 2)]}; came ${px(c, 2, 130)[0]}, glass ${px(c, 20, 130)[0]}`;
+});
+test("zero backlight gives no transmitted light: only the front reflection of the room", () => {
+  const dark = render(make({backlight: () => {}, front: 0}));
+  assert(maxDiff(pixels(dark), pixels(render(make({backlight: () => {}, front: 0, extinction: 0})))) === 0);
+  for (let i = 0; i < 4; i++) assert(px(dark, 40 + i * 70, 60)[0] === 0, "light without a backlight");
+  const room = (ctx) => { ctx.fillStyle = "#404040"; ctx.fillRect(0, 0, W, H); };
+  const f = render(make({backlight: () => {}, front: 0.5, room}));
+  assert(px(f, 160, 60)[0] > 0 && px(f, 160, 60)[0] < 64, "front reflection " + px(f, 160, 60)[0]);
+});
+test("tint is per channel: red glass passes red and blocks blue", () => {
+  const red = (ctx) => { ctx.fillStyle = "#ff0000"; ctx.fillRect(0, 0, W, H); };
+  const c = show("red glass", render(make({tint: red})));
+  const [r, g, b] = px(c, 20, 130);
+  assert(r > 240 && g < 5 && b < 5, `${r},${g},${b}`);
+});
+test("coverage confines the plate; outside is the room; output opaque", () => {
+  const cov = (ctx) => { ctx.fillStyle = "#fff"; ctx.fillRect(100, 0, 120, H); };
+  const room = (ctx) => { ctx.fillStyle = "#202020"; ctx.fillRect(0, 0, W, H); };
+  const c = show("plate in the middle third", render(make({coverage: cov, room})));
+  assert(near(px(c, 20, 130), [32, 32, 32, 255], 1), "outside the plate isn't the room: " + px(c, 20, 130));
+  assert(px(c, 140, 130)[0] > 200, "inside the plate isn't lit");
+  const all = pixels(c);
+  for (let i = 3; i < all.length; i += 4) if (all[i] !== 255) throw new Error("not opaque");
+});
+test("repeat seeks: same t, same frame; a moving light changes it", () => {
+  const p = make({backlight: (ctx, t) => { ctx.fillStyle = "#fff"; ctx.fillRect(t * 200, 0, 60, H); }});
+  const a = render(p, 0.5); render(p, 0.1); render(p, 0.9);
+  assert(maxDiff(pixels(a), pixels(render(p, 0.5))) === 0);
+  assert(maxDiff(pixels(a), pixels(render(p, 0.9))) > 0);
+});
+run();
+</script></body></html>

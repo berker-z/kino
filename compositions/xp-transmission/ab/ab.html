@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="../vendor/fonts.css" />
+    <script src="../vendor/gsap.min.js"></script>
+    <script src="../vendor/kino.js"></script>
+    <script src="../scene.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; position: relative; }
+      #root > div { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="7" data-width="2560" data-height="1440" data-fps="24"></div>
+    <script>
+      // Mechanical A/B for transmissionComposite, 1 s each, through the
+      // hero's filmPass settings:
+      //   0  the lancet's density map itself (white = dense), and its tint
+      //   1  transmitted: the film's moving band at scene time 5
+      //   2  the same plate, a different backlight: broad, from low left, cooler
+      //   3  naive: the room, then the tinted panel screen-blended at full
+      //      strength (no density, no extinction): light paints over the cames
+      //   4  a photograph as a glass negative (density = luma), broad backlight
+      //   5  the same photograph as a positive slide (density = 1 - luma)
+      //   6  the slide under the film's moving band (scene time 5)
+      const W = 2560, H = 1440, FPS = 24, T = 5;
+      const root = document.getElementById("root");
+      const stage = (start) => { const d = document.createElement("div"); d.className = "clip"; Object.assign(d.dataset, { start, duration: 1, trackIndex: start }); root.appendChild(d); return d; };
+      const film = { grain: 0.03, halation: 0.55, halationColor: "#ffc89a", halationThreshold: 0.55, halationRadius: 26, contrast: 0.3, vignette: 0.4, weave: 0 };
+      const load = (f) => { const i = new Image(); i.src = "../assets/" + f; return i.decode().then(() => i); };
+      Promise.all([reliquaryScene(), load("statue.jpg")]).then(([sc, statue]) => {
+        const tl = gsap.timeline({ paused: true });
+        const pass = (start, paint) => Kino.filmPass(stage(start), tl, { width: W, height: H, start, duration: 1, fps: FPS, paint: (ctx) => paint(ctx), ...film });
+        pass(0, (ctx) => { ctx.drawImage(sc.densC, 700, 120, sc.PW * 1.7, sc.PH * 1.7); ctx.drawImage(sc.tintC, 1400, 120, sc.PW * 1.7, sc.PH * 1.7); });
+        pass(1, (ctx) => sc.transmit(ctx, T));
+        const broad = (ctx, t) => {
+          sc.cam(ctx, t);
+          const g = ctx.createRadialGradient(sc.PX - 80, sc.PY + sc.PH * 0.9, 10, sc.PX - 80, sc.PY + sc.PH * 0.9, sc.PH * 1.1);
+          g.addColorStop(0, "rgb(220,235,255)"); g.addColorStop(1, "rgb(10,12,18)");
+          ctx.fillStyle = g; ctx.fillRect(sc.PX - 50, sc.PY - 50, sc.PW + 100, sc.PH + 100);
+        };
+        const other = Kino.transmissionComposite({ width: W, height: H, room: sc.room, density: sc.density, tint: sc.tint, coverage: sc.coverage, backlight: broad, extinction: 5, gain: 2.6, front: 0.18 });
+        pass(2, (ctx) => other(ctx, T));
+        pass(3, (ctx) => {
+          ctx.save(); sc.room(ctx, T); ctx.restore();
+          ctx.save(); ctx.globalCompositeOperation = "screen"; sc.tint(ctx, T); ctx.restore();
+        });
+        // A photograph as glass, filling a frame-sized plate (no room).
+        const photo = (invert) => (ctx) => { ctx.filter = `grayscale(1)${invert ? " invert(1)" : ""}`; ctx.drawImage(statue, 0, 0, W, H); };
+        const even = (ctx) => { const g = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, 1500); g.addColorStop(0, "#fff"); g.addColorStop(1, "#333"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); };
+        const neg = Kino.transmissionComposite({ width: W, height: H, density: photo(false), backlight: even, extinction: 3.2, gain: 1.6 });
+        const slide = Kino.transmissionComposite({ width: W, height: H, density: photo(true), backlight: even, extinction: 3.2, gain: 1.6 });
+        const bandLight = (ctx, t) => { const y = H * (0.2 + 0.5 * (t - 4)); const g = ctx.createLinearGradient(0, y - 500, 0, y + 500); g.addColorStop(0, "rgba(255,244,222,0)"); g.addColorStop(0.5, "rgba(255,244,222,1)"); g.addColorStop(1, "rgba(255,244,222,0)"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); };
+        const slideBand = Kino.transmissionComposite({ width: W, height: H, density: photo(true), backlight: bandLight, extinction: 3.2, gain: 2.2 });
+        pass(4, (ctx) => neg(ctx, T));
+        pass(5, (ctx) => slide(ctx, T));
+        pass(6, (ctx) => slideBand(ctx, T));
+        window.__timelines["main"] = tl;
+      }).catch((e) => console.error("ab failed:", e && e.stack || e));
+    </script>
+  </body>
+</html>
