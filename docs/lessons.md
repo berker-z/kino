@@ -28,6 +28,14 @@ Things we learned the hard way building the first scenes. Read this before writi
 
 **Draw backgrounds before foregrounds** when anything spans cells or rows (teletext double height). Row by row, the next row's background paints over the spill.
 
+**Canvas work gets tested in a real browser.** `npm run test:browser` runs `tests/browser/*.html` in the same headless Chrome HyperFrames uses, served over HTTP (`file://` can't `fetch()`, which `htmlPlate` needs to inline fonts). Each page also shows the canvases it checked, so it can be opened and looked at.
+
+**Antialiased pixels drawn twice come out darker.** Overlapping crops of the same transparent raster (line boxes with padding) draw their shared edge pixels twice, and source-over accumulates alpha. Make crops meet, don't overlap.
+
+**Clipping changes antialiasing slightly.** A curve drawn inside a clip rasterizes a little differently at the clip edge than the same curve unclipped. Strip-based effects (temporalScan) can't be pixel-exact against the unclipped source on curves; flat fills and pixel-aligned lines are.
+
+**One HTML file with a composition id per project.** `hyperframes check` fails `multiple_root_compositions` if a second root-level HTML file has `data-composition-id`. Variants (the `xp-*/ab/ab.html` A/B pages) go in a subfolder and render with `-c ab/ab.html`.
+
 ## Borrowing from the HyperFrames registry
 
 `hyperframes catalog` lists about 390 blocks and components (Apache 2.0). Most are ads and UI mockups, but a few overlap with kino and their comments are worth reading: they cite measurements and hit the same seek problems we did. Read the source, take the idea, write our own version, and credit the item in the file header. So far: the beam velocity law (`oscilloscope-trace`), the foreignObject snapshot (`ordered-dither-pass`), the banded field (`halftone-field`).
@@ -71,6 +79,7 @@ Split in two on purpose. The global rules have held across every look so far. Th
 - A sequence of designed pages with a transition between them reads as a slideshow, however good the pages are. The pieces that worked had continuous motion built into the concept.
 - Transitions need an intelligible mechanism: a sheet sliding in, a torn print, a glass lens. The water-drop ripple was the one he didn't like.
 - Whole words and lines, wiped in on beats. Not one letter per beat.
+- Reveals need a rule you can read. Shuffled slabs assembling a word were "too random"; the same word drafted in construction order (guides, stems, bars, curves) was loved. Derive the order from the thing's own structure.
 - To prove a look, run it on new material in a short piece with music. Matching the reference's own frames convinces nobody.
 
 ### Per look

@@ -23,6 +23,12 @@ The showcase page with all four styles is `examples/styles/index.html` (videos n
 
 **Research:** `research/nouscon/` holds the NousCon teaser teardown (report, lab and compare pages). The `teardown` skill (`.claude/skills/teardown/`) is that process written down.
 
+## 2026-10-09: three new languages
+
+Built from `KINO_NEXT_VISUAL_LANGUAGES.md`: `compositions/xp-darkroom` (THE SILENT CITY), `xp-typesetting` (THE NAME OF THE THING), `xp-temporal-scan` (AN OBJECT OUTSIDE TIME), each with an `ab/ab.html` cross-material version. New library pieces: `doubleExposure`, `filmPass`, `temporalScan`, `lineRise`, `fragmentGrid`/`drawFragments`, and `data-lines` in `htmlPlate`. Results, critique and verdict: `examples/languages/index.html`. Canvas code is now tested in a browser: `npm run test:browser`. Waiting on Berker's verdict before any `darkroom` look or more promotion.
+
+Photo note: Berker doesn't want the Kutia Kondh portrait (`portrait.jpg` in dither-lab/research) used again.
+
 ## Machine notes
 
 - Run HyperFrames as `env -u WAYLAND_DISPLAY hyperframes …` until Home Manager is rebuilt with the dotfiles fix (commit `1e0b24c`, wraps chrome-headless-shell without `WAYLAND_DISPLAY`). Without it, WebGL is null and every pass renders black.

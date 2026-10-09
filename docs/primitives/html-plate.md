@@ -9,6 +9,8 @@ We already paint type with `wipeText` and `caption`, which is fine for a title. 
 The markup goes into an SVG `<foreignObject>`, the SVG is loaded as an image, and the image is drawn into a canvas. That's the trick the `ordered-dither-pass` and `ascii-render-pass` components in the HyperFrames registry use. Two things are ours:
 
 - **Fonts are inlined.** An SVG image can't fetch anything, so a page that uses `"Inter Tight"` would quietly fall back to a system font. `htmlPlate` finds each `@font-face` in the document whose family the page mentions, fetches the file, and puts it in the SVG as a data URL. The registry's version doesn't do this.
+- **Lines are measured.** An element marked `data-lines="name"` comes back in `plate.lines[name]` as one box per rendered line, read with `Range.getClientRects()` and merged per line. So a paragraph can enter line by line (`lineRise`) without us guessing where the browser broke it.
+- **Characters are measured.** `data-chars="name"` returns each visible character's box in `plate.chars[name]` (the browser's own advance boxes), for `letterStrokes`.
 - **Parts are measured.** Before the snapshot, the page is laid out for real offscreen and every `data-part="name"` element's box is read. So the layout lives in CSS and the motion lives in canvas: wipe the headline in on a beat, slide a column up, move the table on its own.
 
 ## Rules

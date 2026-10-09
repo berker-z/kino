@@ -54,6 +54,11 @@ Footage is dithered offline by `scripts/dither.py` (same settings as `ditherPass
 | `printStrip` | a row of prints sliding at constant speed |
 | `tornWipe` | the next scene through a torn print |
 | `lensPass` + `lensPassFx` | the next scene opening inside a glass circle |
+| `doubleExposure` | one scene exposed inside another's silhouette, through an alpha or luma mask |
+| `letterStrokes`, `drawStroke` | a set word taken apart into stems, bars and curves, drafted in that order |
+| `fragmentGrid`, `drawFragments` | a set word assembling from slabs of its own letterforms (superseded by strokes in the typesetting piece) |
+| `lineRise` | measured lines rising into place behind their own boxes |
+| `temporalScan` | a frame built from strips of a source, each at a different source time |
 
 Some arrangements are still inside their compositions because they belong to one style: the scope's mode squash and power-off, teletext's page search. Promote them when a second piece needs them.
 
@@ -64,6 +69,7 @@ Some arrangements are still inside their compositions because they belong to one
 | `risoPass` | two separations, one per ink | a two-colour riso print |
 | `ditherPass` | one grayscale canvas (photos, camera moves) | 2-4 tone ordered dither: Bayer 8, blue noise, halftone; prep that makes photos read |
 | `ditherCanvas` | one grayscale canvas | 1-bit or smooth two-colour (the first waves video; prefer `ditherPass`) |
+| `filmPass` | one RGB canvas | black-and-white film, printed: halation, toe and S-curve, grain, weave, optional split tone |
 
 ### `looks/`: bundles
 A look is a curated combination of three things that are independent underneath:
@@ -121,13 +127,15 @@ Because sources paint grayscale and passes decide the medium, most combinations 
 | `risoPass` | **two** canvases, one per drum | luma of each | full ink | reduced to luma |
 | `ditherPass` | one canvas | Rec. 709 luma | light | reduced to luma |
 | `ditherCanvas` | one canvas | luma | the `ink` colour | reduced to luma |
+| `filmPass` | one canvas | RGB | light | kept (or split-toned from luma) |
 
 - Every pass fills its source with black before calling `paint`, so transparent areas read as black. `htmlPlate` is transparent by default; give it a `background` if the page should be paper.
 - With `risoPass`, a source chooses its drum: paint it into one separation, or into both for a near-black overprint.
+- Alpha stops before the pass. Masks carry alpha (`doubleExposure` reads a mask's alpha or its luma, said explicitly with `maskMode`), and the composite they produce is opaque RGB, which is what every pass expects. No pass reads alpha.
 - Nothing converts between these silently any more: until 2026-10-09 `risoPass` and `ditherCanvas` read only the red channel, so a blue-heavy colour source went dark.
 
 ## Where to read next
 
 - `docs/lessons.md`: what we learned the hard way, including Berker's taste verdicts.
-- `docs/primitives/`: one page per primitive with the reasons behind its defaults (`spectrum-feed`, `screen-pass`, `riso-pass`).
+- `docs/primitives/`: one page per primitive with the reasons behind its defaults (`spectrum-feed`, `screen-pass`, `riso-pass`, `double-exposure`, `film-pass`, `type-reveal`, `temporal-scan`, ...).
 - `.claude/skills/teardown/`: how to learn a look from someone else's video.

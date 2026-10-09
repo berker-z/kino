@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three Languages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter+Tight:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0C0F; --panel: #13151A; --line: #262A33; --text: #D6D9E0; --muted: #8A90A0; --accent: #F2F4F8;
+    --tab: var(--accent);
+  }
+  body[data-style="darkroom"] { --tab: #F4EDE1; }
+  body[data-style="typesetting"] { --tab: #EBE5D8; }
+  body[data-style="temporal"] { --tab: #BFD4FF; }
+  body[data-style="verdict"] { --tab: #F2F4F8; }
+  pre { font: 13px/1.55 "IBM Plex Mono", monospace; background: #13151A; border: 1px solid var(--line); padding: 12px 14px; overflow-x: auto; color: #C9CDD6; border-radius: 3px; }
+  .ab { margin-top: 26px; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 "Inter Tight", system-ui, sans-serif; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+  header { padding: 56px 0 26px; }
+  .kicker { color: var(--muted); font: 500 13px "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
+  h1 { font-weight: 800; font-size: clamp(42px, 7vw, 92px); line-height: .95; margin: 12px 0 18px; color: var(--accent); letter-spacing: -.02em; }
+  header p { max-width: 820px; margin: 0 0 10px; color: #B9BECA; }
+  nav { position: sticky; top: 0; z-index: 3; background: rgba(11,12,15,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); border-top: 1px solid var(--line); }
+  nav .wrap { display: flex; gap: 4px; overflow-x: auto; }
+  nav button { font: 500 14px "IBM Plex Mono", monospace; letter-spacing: .06em; background: none; border: 0; color: var(--muted); padding: 16px 18px 14px; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+  nav button.on { color: var(--accent); border-bottom-color: var(--tab); }
+  section { display: none; padding: 34px 0 60px; }
+  section.on { display: block; }
+  video { width: 100%; display: block; background: #000; border: 1px solid var(--line); border-radius: 3px; aspect-ratio: 16 / 9; }
+  .meta { display: flex; gap: 18px; flex-wrap: wrap; font: 500 13px "IBM Plex Mono", monospace; color: var(--muted); margin: 12px 0 30px; }
+  .meta b { color: var(--tab); font-weight: 500; }
+  h2 { font-size: 40px; font-weight: 800; margin: 0 0 6px; color: var(--accent); letter-spacing: -.01em; }
+  .lede { font-size: 20px; color: #C9CDD6; max-width: 880px; margin: 0 0 30px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 40px; }
+  @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+  h3 { font: 500 13px "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--tab); margin: 0 0 8px; }
+  .block p { margin: 0 0 10px; }
+  ul { margin: 0; padding-left: 18px; }
+  li { margin: 0 0 8px; }
+  code { font: 14px "IBM Plex Mono", monospace; color: var(--accent); background: #1B1E25; padding: 1px 5px; border-radius: 2px; }
+  .tag { display: inline-block; font: 500 11px "IBM Plex Mono", monospace; letter-spacing: .08em; padding: 1px 6px; border-radius: 2px; margin-right: 6px; vertical-align: 2px; }
+  .new { background: var(--tab); color: #0B0C0F; }
+  .used { border: 1px solid var(--line); color: var(--muted); }
+  .timeline { list-style: none; padding: 0; border-left: 2px solid var(--line); margin-left: 4px; }
+  .timeline li { padding-left: 16px; position: relative; }
+  .timeline li::before { content: ""; position: absolute; left: -6px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--tab); }
+  .timeline span { font: 500 13px "IBM Plex Mono", monospace; color: var(--muted); margin-right: 8px; }
+  .wide { grid-column: 1 / -1; }
+  .stills { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin: 10px 0 0; }
+  .stills img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 2px; cursor: zoom-in; }
+  .pending { font: 500 13px "IBM Plex Mono", monospace; color: var(--tab); margin: 8px 0 0; }
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: none; align-items: center; justify-content: center; z-index: 10; cursor: zoom-out; padding: 16px; }
+  .lightbox img { max-width: 100%; max-height: 100%; }
+  footer { border-top: 1px solid var(--line); padding: 26px 0 60px; color: var(--muted); font-size: 15px; }
+</style>
+</head>
+<body data-style="darkroom">
+<header class="wrap">
+  <div class="kicker">kino · 2026-10-09 · KINO_NEXT_VISUAL_LANGUAGES.md</div>
+  <h1>Three languages</h1>
+  <p>Three proofs of concept, each a new operation rather than a new palette: a double exposure with a film treatment, browser-set type revealed as geometry, and a frame built from strips of different moments. Each has its own composition, a cross-material A/B, browser tests, and a critique. Rendered at 2560×1440.</p>
+  <p>Videos are local files next to this page (gitignored). Started from commit <code>5a48ebd</code>.</p>
+</header>
+<nav><div class="wrap">
+  <button data-s="darkroom" class="on">DARKROOM</button>
+  <button data-s="typesetting">TYPESETTING</button>
+  <button data-s="temporal">TEMPORAL SCAN</button>
+  <button data-s="verdict">VERDICT</button>
+</div></nav>
+
+<section id="darkroom" class="on"><div class="wrap">
+  <h2>The Silent City</h2>
+  <p class="lede">A marble head comes up out of black. A refinery at night rises inside her silhouette, plumes drifting up through the head, then dissolves into a harbour's lights in fog. Two lines of type rise into the black at the right. One shot, 12 s, 24 fps.</p>
+  <video src="../xp-darkroom/the-silent-city.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="meta"><span><b>compositions/xp-darkroom</b></span><span>render 55 s</span><span>92 MB (grain)</span></div>
+  <div class="stills"><img src="stills/darkroom-the-silent-city-01.50s.jpg" alt=""><img src="stills/darkroom-the-silent-city-04.00s.jpg" alt=""><img src="stills/darkroom-the-silent-city-06.50s.jpg" alt=""><img src="stills/darkroom-the-silent-city-08.50s.jpg" alt=""><img src="stills/darkroom-the-silent-city-11.50s.jpg" alt=""></div>
+  <div class="ab"><h3>Cross-material: raw · ditherPass · screenPass (cyanotype)</h3>
+  <video src="../xp-darkroom/ab.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="stills"><img src="stills/darkroom-ab-01.50s.jpg" alt=""><img src="stills/darkroom-ab-04.50s.jpg" alt=""><img src="stills/darkroom-ab-07.50s.jpg" alt=""></div></div>
+  <div class="cols" style="margin-top:34px">
+    <div class="block"><h3>Reusable</h3>
+      <p><span class="tag new">NEW</span><code>doubleExposure</code> (arrange): foreground, interior and mask as three painters, alpha or luma coverage, screen or replace. Output is opaque RGB, so any pass takes it. The A/B is the proof: the same frames raw, Bayer-dithered and on the Trinitron with no change to the scene.</p>
+      <p><span class="tag new">NEW</span><code>filmPass</code>: halation thresholded before it's blurred, toe and S-curve, midtone-weighted grain re-seeded per frame, weave, split tone. <code>strength: 0</code> is an exact passthrough.</p>
+      <p><span class="tag used">USED</span><code>htmlPlate</code> + <code>lineRise</code> for the title, the typesetting primitives recombined.</p></div>
+    <div class="block"><h3>Composition-only</h3>
+      <p>The plate prep, framing, the screen-weighted optical dissolve, the 0.3-stop exposure lift and all timings. The mask was cut offline by <code>make-mask.py</code> (warmth + brightness against the grey sweep); it's a fixture, not segmentation.</p>
+      <p>Plates: a Getty bust of Livia (CC0), a refinery at night (CC BY-SA 3.0, Uxud), Preemraff Lysekil in fog (CC0). Credits in <code>assets/CREDITS.txt</code>.</p></div>
+    <div class="block wide"><h3>Critique</h3>
+      <p>Works: you read one image living in another's shape at once, and the 14% of marble left over the refinery keeps it from looking cut out. The halation on the harbour lights does the "exposed, not overlaid" job better than any of the compositing. It holds a lot of black, which the brief asked for.</p>
+      <p>Weaker: silhouette-with-a-landscape-inside is the True Detective title, and it's become a trope; this is a well-made version of a known thing. In the harbour section the upper head goes flat grey (the fog sky is empty), and the bust's sawn-off back makes a straight vertical edge. The type is very polite. Grain at 1440p makes the encode huge.</p>
+      <p>Don't promote: the dissolve and the exposure lift. A <code>darkroom</code> look waits for your verdict on the treatment.</p></div>
+  </div>
+</div></section>
+
+<section id="typesetting"><div class="wrap">
+  <h2>The Name of the Thing</h2>
+  <p class="lede">An almost empty page: a marker, a hairline rule drawing across, then construction lines (cap height, baseline, a hairline through every stem). The word is drafted in construction order: every stem drops in left to right, then the bars, then the curves and diagonals. The guides fade, two columns rise line by line, and the page holds while the word's plane drifts 1.2% toward you. 12 s, 30 fps, no material.</p>
+  <p class="meta" style="margin-top:-14px">Take two. Take one assembled the word from shuffled rectangular slabs; you found it too random.</p>
+  <video src="../xp-typesetting/the-name-of-the-thing.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="meta"><span><b>compositions/xp-typesetting</b></span><span>render 18 s</span></div>
+  <div class="stills"><img src="stills/typesetting-the-name-of-the-thing-02.60s.jpg" alt=""><img src="stills/typesetting-the-name-of-the-thing-03.90s.jpg" alt=""><img src="stills/typesetting-the-name-of-the-thing-05.40s.jpg" alt=""><img src="stills/typesetting-the-name-of-the-thing-06.60s.jpg" alt=""><img src="stills/typesetting-the-name-of-the-thing-11.80s.jpg" alt=""></div>
+  <div class="ab"><h3>Cross-material: risoPass, word and rule in one drum, copy in the other</h3>
+  <video src="../xp-typesetting/ab-riso.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="stills"><img src="stills/typesetting-ab-riso-01.50s.jpg" alt=""><img src="stills/typesetting-ab-riso-03.00s.jpg" alt=""><img src="stills/typesetting-ab-riso-05.50s.jpg" alt=""></div></div>
+  <div class="cols" style="margin-top:34px">
+    <div class="block"><h3>Reusable</h3>
+      <p><span class="tag new">NEW</span><code>htmlPlate</code> <code>data-lines</code>: one box per line where the browser broke it.</p>
+      <p><span class="tag new">NEW</span><code>lineRise</code>: lines entering from below behind their own boxes. Already used by all three pieces.</p>
+      <p><span class="tag new">NEW</span><code>letterStrokes</code> / <code>drawStroke</code> + <code>htmlPlate</code> <code>data-chars</code>: each letter's ink sorted into stems (near-full-height columns), bars (long horizontal runs through a stem) and curves (the rest), read from the browser's raster. All pieces together are the intact word, pixel for pixel.</p>
+      <p><span class="tag used">KEPT</span><code>fragmentGrid</code> and friends, from take one; unused now.</p></div>
+    <div class="block"><h3>Composition-only</h3>
+      <p>The page (CSS grid, Inter Tight 500 at 380 px tracked 0.3em, IBM Plex Mono captions), the schedule, and drawing the word into its own layer so the push moves one intact raster. No letter spacing or line breaking is done in canvas anywhere.</p></div>
+    <div class="block wide"><h3>Critique</h3>
+      <p>Works: paused at any frame it still looks typeset, because it is; motion only chooses what's visible. The assembly has the patience the brief wanted, and the line rise is calm and exact. The riso A/B needed no change to the type source.</p>
+      <p>Weaker: wide-tracked Inter at monumental size is a default "premium" look. O and S have no stems or bars, so they arrive whole at the end. Where a curve meets a stem a small nub sometimes travels with the stem (the K's junction). The final push is so slow it's mostly there to keep the frame alive.</p></div>
+  </div>
+</div></section>
+
+<section id="temporal"><div class="wrap">
+  <h2>An Object Outside Time</h2>
+  <p class="lede">A small world that's a pure function of its own time: a colonnade sliding past, a mast with a long bar turning on it, a train crossing. Vertical strips open to 1.1 s of time difference and the bar bends into a curve; the scan hands over to horizontal bands through a nested scan, and the train leans back through time while the bar becomes an S. 9 s, 30 fps, ice on navy.</p>
+  <video src="../xp-temporal-scan/an-object-outside-time.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="meta"><span><b>compositions/xp-temporal-scan</b></span><span>render 9 s (256 strips)</span></div>
+  <div class="stills"><img src="stills/temporal-scan-an-object-outside-time-01.00s.jpg" alt=""><img src="stills/temporal-scan-an-object-outside-time-03.40s.jpg" alt=""><img src="stills/temporal-scan-an-object-outside-time-05.50s.jpg" alt=""><img src="stills/temporal-scan-an-object-outside-time-07.00s.jpg" alt=""><img src="stills/temporal-scan-an-object-outside-time-08.80s.jpg" alt=""></div>
+  <div class="ab"><h3>Cross-material: ditherPass, Bayer 8, ice in three tones</h3>
+  <video src="../xp-temporal-scan/ab-dither.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="stills"><img src="stills/temporal-scan-ab-dither-03.40s.jpg" alt=""><img src="stills/temporal-scan-ab-dither-07.50s.jpg" alt=""></div></div>
+  <div class="cols" style="margin-top:34px">
+    <div class="block"><h3>Reusable</h3>
+      <p><span class="tag new">NEW</span><code>temporalScan</code> (arrange) and <code>scanStrips</code>: strip <i>i</i> samples <code>t − offset − span·u</code>. Stateless, no frame cache. With span 0 it's the source. The sampler knows nothing about the material; the dither A/B just wraps it.</p></div>
+    <div class="block"><h3>Composition-only</h3>
+      <p>The world, the schedule, and nesting one scan inside another for the axis handover (a pattern, not an option).</p></div>
+    <div class="block wide"><h3>Performance</h3>
+      <p>The whole 9 s rendered in 9 s of wall time at 2560×1440: 256 strips for the x scan, 180 bands for y, 48 × 96 nested during the handover. No buffers are allocated beyond the output canvas. That's for a cheap procedural source; a photo or footage source would need a bounded cache of sampled frames (14 MB each at 1440p), which isn't built.</p></div>
+    <div class="block wide"><h3>Critique</h3>
+      <p>Works: the bending bar is unmistakably several moments at once, and the colonnade re-spacing makes the direction legible. Nesting means the axis change crosses rather than cuts.</p>
+      <p>Weaker: it's a diagram, not a piece yet. The train with windows and wheels is clip-art (it replaced a stick figure that was worse). At the bar's fastest moment small steps between strips still show. Photographic material through it is the obvious next test.</p></div>
+  </div>
+</div></section>
+
+<section id="verdict"><div class="wrap">
+  <h2>Verdict</h2>
+  <p class="lede"><b>Darkroom is the most promising piece. The temporal scan is the most interesting operation.</b> Darkroom already looks like a title sequence; the scan is a genuinely new capability whose imagery is the weakest of the three. Typesetting is the most immediately useful: every future piece has type in it.</p>
+  <div class="cols">
+    <div class="block"><h3>The primitive each one actually found</h3>
+      <ul>
+        <li>Darkroom: <code>doubleExposure</code>. The film pass is good, but the reusable idea is the explicit mask contract (alpha vs luma, opaque out) that lets a silhouette composite go into any material.</li>
+        <li>Typesetting: <code>lineRise</code> plus <code>data-lines</code>. The slab fragments are a good grammar but narrower.</li>
+        <li>Temporal scan: <code>temporalScan</code>, stateless and cheap enough for 256 strips at 1440p.</li>
+      </ul></div>
+    <div class="block"><h3>Public now vs later</h3>
+      <p>Public now (exported in <code>window.Kino</code>): <code>doubleExposure</code>, <code>filmPass</code>, <code>temporalScan</code>, <code>lineRise</code>, <code>htmlPlate</code> lines. Each is the operation its brief asked for or is already used by more than one piece.</p>
+      <p>Exported but provisional until a second piece uses them: <code>fragmentGrid</code>, <code>inkedFragments</code>, <code>drawFragments</code>.</p>
+      <p>Not promoted: the optical dissolve, scan nesting, mask cutting. No new <code>MotionAesthetic</code>; a <code>darkroom</code> look waits for your verdict.</p></div>
+    <div class="block wide"><h3>The brief's questions</h3>
+      <p>The <code>(ctx, t)</code> idiom held for all three; the scan's source only gained a third argument (its strip) for culling. Double exposure is three painters in, one painter out, with scratch canvases hidden inside. Alpha lives in masks and stops at the composite, which is opaque, so no pass changed. Typesetting needed <code>htmlPlate</code> plus one measurement and two small functions. The scan needed nothing from any renderer. Recombined with existing pieces: dither, cyanotype screen and riso all took the new output unchanged.</p></div>
+    <div class="block wide"><h3>Tests and checks</h3>
+      <pre>npm run typecheck            clean
+npm test                     35 passed (9 new: strips, fragments, line timing, threshold, weave)
+npm run test:browser         22 passed (new runner; pages show what they checked)
+scripts/smoke.sh             SMOKE OK
+hyperframes check            all three pass (darkroom: GPU readback perf warnings from capture;
+                             temporal: canvas touches frame edge, which is the full-bleed scene)</pre></div>
+    <div class="block wide"><h3>Rebuild and render</h3>
+      <pre>npm run build
+cd compositions/xp-darkroom      # or xp-typesetting, xp-temporal-scan
+python3 make-mask.py             # darkroom only, once, after fetching the plates (assets/CREDITS.txt)
+env -u WAYLAND_DISPLAY hyperframes check
+env -u WAYLAND_DISPLAY hyperframes render --quality delivery --output ../../examples/xp-darkroom/the-silent-city.mp4
+env -u WAYLAND_DISPLAY hyperframes render -c ab/ab.html --quality delivery --output ../../examples/xp-darkroom/ab.mp4</pre></div>
+  </div>
+</div></section>
+
+<footer class="wrap">Primitive docs: <code>docs/primitives/double-exposure.md</code>, <code>film-pass.md</code>, <code>type-reveal.md</code>, <code>temporal-scan.md</code>. Browser tests: <code>tests/browser/</code>.</footer>
+<div class="lightbox"><img alt=""></div>
+<script>
+  const show = (s) => {
+    document.body.dataset.style = s;
+    document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", b.dataset.s === s));
+    document.querySelectorAll("section").forEach((x) => x.classList.toggle("on", x.id === s));
+    document.querySelectorAll("video").forEach((v) => { if (!v.closest("section.on")) v.pause(); });
+    history.replaceState(null, "", "#" + s);
+  };
+  document.querySelectorAll("nav button").forEach((b) => b.onclick = () => show(b.dataset.s));
+  if (location.hash) show(location.hash.slice(1));
+  const lb = document.querySelector(".lightbox");
+  document.querySelectorAll(".stills img").forEach((i) => i.onclick = () => { lb.querySelector("img").src = i.src; lb.style.display = "flex"; });
+  lb.onclick = () => lb.style.display = "none";
+</script>
+</body>
+</html>
