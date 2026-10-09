@@ -9,6 +9,7 @@ import {scanStrips} from "../src/arrange/temporal-scan";
 import {fragmentGrid, lineProgress} from "../src/arrange/type-reveal";
 import {gateWeave, thresholdFilter} from "../src/passes/film-pass";
 import {classifyStrokes} from "../src/arrange/letter-strokes";
+import {skyRegion, thresholdWindow} from "../src/arrange/self-matte";
 
 const W = 2560, H = 1440;
 
@@ -157,4 +158,26 @@ test("classifyStrokes: an I is all stem; an L is a stem and a foot", () => {
   const r = classifyStrokes(L.alpha, L.w, L.h);
   assert.equal(r.labels[16 * L.w + 19], 2, "foot is a bar");
   assert.equal(r.labels[0], 1);
+});
+
+test("skyRegion: dark sky connected to the top; a dark window in the facade isn't sky", () => {
+  // 0 = black, 9 = lit. Sky on top and down the left side; a black window inside the building.
+  const rows = ["000000", "099990", "090090", "099990", "099990"];
+  const w = 6, h = rows.length;
+  const lum = Uint8Array.from(rows.join(""), (c) => Number(c) * 28);
+  const sky = skyRegion(lum, w, h, (v) => v < 20);
+  assert.equal(sky[0], 1);
+  assert.equal(sky[1 * w + 0], 1, "left edge column is sky (connected)");
+  assert.equal(sky[2 * w + 2], 0, "the window is not sky");
+  assert.equal(sky[2 * w + 3], 0);
+});
+
+test("thresholdWindow: maps lo to 0 and lo + width to 1", () => {
+  for (const [lo, width] of [[0.9, 0.1], [0.6, 0.05], [0.3, 0.2]]) {
+    const m = /brightness\(([\d.]+)\) contrast\(([\d.]+)\)/.exec(thresholdWindow(lo, width))!;
+    const a = Number(m[1]), k = Number(m[2]);
+    const f = (x: number) => (a * x - 0.5) * k + 0.5;
+    assert.ok(Math.abs(f(lo)) < 1e-3, `f(lo) = ${f(lo)}`);
+    assert.ok(Math.abs(f(lo + width) - 1) < 1e-3, `f(lo + width) = ${f(lo + width)}`);
+  }
 });

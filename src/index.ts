@@ -74,6 +74,8 @@ export {doubleExposure} from "./arrange/double-exposure";
 export type {DoubleExposure, DoubleExposureOptions, MaskMode, ExposureBlend} from "./arrange/double-exposure";
 export {fragmentGrid, inkedFragments, drawFragments, lineProgress, lineRise} from "./arrange/type-reveal";
 export type {Fragment, FragmentOptions, LineRiseOptions} from "./arrange/type-reveal";
+export {plateKeys, skyRegion, thresholdWindow} from "./arrange/self-matte";
+export type {PlateKeys, PlateKeyOptions} from "./arrange/self-matte";
 export {letterStrokes, classifyStrokes, drawStroke} from "./arrange/letter-strokes";
 export type {StrokeKind, StrokePiece, LetterStrokes, StrokeOptions, WipeDirection} from "./arrange/letter-strokes";
 export {temporalScan, scanStrips} from "./arrange/temporal-scan";
