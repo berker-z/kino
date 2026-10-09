@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="../vendor/fonts.css" />
+    <script src="../vendor/gsap.min.js"></script>
+    <script src="../vendor/kino.js"></script>
+    <script src="../scene.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; position: relative; }
+      #root > div { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="6" data-width="2560" data-height="1440" data-fps="24"></div>
+    <script>
+      // Mechanical A/B for shutterIntegrate, 1 s each, all at scene time 7.5
+      // (shutter 1.1 s) unless noted:
+      //   0  the source at t only (shutter 0, no flash), digicam
+      //   1  trails only (1.1 s, no flash), digicam
+      //   2  trails + rear-curtain flash (the film's exposure), digicam
+      //   3  the same exposure through filmPass instead
+      //   4  footage: one frame of galloping horses, no material
+      //   5  footage: 0.5 s shutter + rear flash 0.4, no material
+      //   hyperframes render -c ab/ab.html -o ../../examples/xp-shutter/ab.mp4
+      const W = 2560, H = 1440, FPS = 24, T = 7.5;
+      const root = document.getElementById("root");
+      const stage = (start) => {
+        const d = document.createElement("div");
+        d.className = "clip";
+        Object.assign(d.dataset, { start, duration: 1, trackIndex: start });
+        root.appendChild(d);
+        return d;
+      };
+      // Horse frames 330-400 (30 fps); source time 0 is frame 330.
+      const frames = Array.from({ length: 71 }, (_, i) => { const im = new Image(); im.src = `../assets/horses/f0${330 + i}.jpg`; return im; });
+      const horses = (ctx, s) => {
+        const f = Math.max(0, Math.min(70, s * 30)), k = Math.floor(f), a = f - k;
+        ctx.drawImage(frames[k], 0, 0, W, H);
+        if (a > 0.01 && k < 70) { ctx.globalAlpha = a; ctx.drawImage(frames[k + 1], 0, 0, W, H); ctx.globalAlpha = 1; }
+      };
+      Promise.all([afterimageScene(), ...frames.map((f) => f.decode())]).then(([sc]) => {
+        const tl = gsap.timeline({ paused: true });
+        const glow = sc.glow;
+        const make = (o) => Kino.shutterIntegrate({ width: W, height: H, source: sc.ambient, flashSource: sc.flash, glow: sc.glow, glowGain: 30, samples: 64, fade: 0.35, flashAt: 0, ...o });
+        const now = make({ duration: 0, flash: 0 }), trails = make({ duration: 1.1, flash: 0 }), both = make({ duration: 1.1, flash: 0.45 });
+        const dc = { exposure: 0.35, shadowTint: 0.2 };
+        Kino.digicamPass(stage(0), tl, { width: W, height: H, start: 0, duration: 1, fps: FPS, paint: (ctx) => now(ctx, T), ...dc });
+        Kino.digicamPass(stage(1), tl, { width: W, height: H, start: 1, duration: 1, fps: FPS, paint: (ctx) => trails(ctx, T), ...dc });
+        Kino.digicamPass(stage(2), tl, { width: W, height: H, start: 2, duration: 1, fps: FPS, paint: (ctx) => both(ctx, T), ...dc });
+        Kino.filmPass(stage(3), tl, { width: W, height: H, start: 3, duration: 1, fps: FPS, paint: (ctx) => both(ctx, T) });
+        const hx = Kino.shutterIntegrate({ width: W, height: H, source: horses, duration: 0.5, samples: 24, flash: 0.4, flashAt: 0 });
+        const raw = (start, painter) => Kino.digicamPass(stage(start), tl, { width: W, height: H, start, duration: 1, fps: FPS, strength: 0, paint: painter });
+        raw(4, (ctx) => horses(ctx, 1.9));
+        raw(5, (ctx) => hx(ctx, 1.9));
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>shutterIntegrate</title><script src="../../dist/kino.js"></script><script src="harness.js"></script></head>
+<body><script>
+const W = 320, H = 180;
+// A source with a static part (a gray block and a ramp) and a moving part:
+// a white square sliding right at 200 px/s.
+function scene(ctx, s) {
+  ctx.fillStyle = "#606060"; ctx.fillRect(20, 120, 80, 40);
+  const g = ctx.createLinearGradient(160, 0, 300, 0); g.addColorStop(0, "#000"); g.addColorStop(1, "#fff");
+  ctx.fillStyle = g; ctx.fillRect(160, 130, 140, 30);
+  ctx.fillStyle = "#fff"; ctx.fillRect(Math.round(40 + 200 * s), 30, 20, 20);
+}
+const direct = (t) => { const c = canvas(W, H); const g = c.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, W, H); scene(g, t); return c; };
+const exposed = (painter, t) => { const c = canvas(W, H); const g = c.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, W, H); painter(g, t); return c; };
+const row = (c, y) => { const d = c.getContext("2d").getImageData(0, y, W, 1).data; return Array.from({length: W}, (_, x) => d[x * 4]); };
+
+test("duration 0 is the source (within the 8-bit linear round trip)", () => {
+  const e = Kino.shutterIntegrate({width: W, height: H, source: scene, duration: 0, samples: 16});
+  const a = show("source t=0.5", direct(0.5)), b = show("exposed, duration 0", exposed(e, 0.5));
+  const d = maxDiff(pixels(a), pixels(b));
+  assert(d <= 1, "max diff " + d);
+  return `max channel diff ${d}`;
+});
+test("identical samples don't brighten: a static picture is unchanged by any shutter", () => {
+  const still = (ctx) => scene(ctx, 0);
+  const e = Kino.shutterIntegrate({width: W, height: H, source: still, duration: 2, samples: 32, flash: 0.3});
+  const d = maxDiff(pixels(direct(0)), pixels(show("static source, 2 s, 32 samples + flash", exposed(e, 1))));
+  assert(d <= 1, "max diff " + d);
+  return `max channel diff ${d}`;
+});
+test("a moving square leaves a trail over the interval; the flash keeps it sharp at t", () => {
+  const trails = Kino.shutterIntegrate({width: W, height: H, source: scene, duration: 0.5, samples: 24});
+  const both = Kino.shutterIntegrate({width: W, height: H, source: scene, duration: 0.5, samples: 24, flash: 0.6, flashAt: 0});
+  show("source t=1 (square at x=240)", direct(1));
+  const tr = show("trails only, 0.5 s", exposed(trails, 1));
+  const bo = show("trails + rear-curtain flash 0.6", exposed(both, 1));
+  const r = row(tr, 40), b = row(bo, 40);
+  // Square at t spans 240..260; at t-0.5 it spanned 140..160.
+  assert(r[150] > 10 && r[150] < 200, "trail at x=150: " + r[150]);
+  assert(r[100] === 0, "light before the interval: " + r[100]);
+  assert(b[250] > 200, "sharp square at t: " + b[250]);
+  assert(b[150] > 5 && b[150] < r[150], "flash exposure should dim the trail, not remove it: " + b[150]);
+  return `trail x=150: ${r[150]} (trails only), ${b[150]} (with flash); square at t ${b[250]}`;
+});
+test("repeat and out-of-order seeks give the same frame (no accumulation between renders)", () => {
+  const e = Kino.shutterIntegrate({width: W, height: H, source: scene, duration: 0.6, samples: 12, flash: 0.4});
+  const a = exposed(e, 0.8);
+  exposed(e, 0.2); exposed(e, 0.8); exposed(e, 0.05);
+  const b = exposed(e, 0.8);
+  assert(maxDiff(pixels(a), pixels(b)) === 0, "frame changed after other renders");
+});
+test("glow: a luminous layer at gain 30 saturates its streak where an 8-bit source can't", () => {
+  const dot = (ctx, s) => { ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(40 + 200 * s, 90, 6, 0, 7); ctx.fill(); };
+  const plain = Kino.shutterIntegrate({width: W, height: H, source: dot, duration: 0.5, samples: 48});
+  const glow = Kino.shutterIntegrate({width: W, height: H, source: () => {}, glow: dot, glowGain: 30, duration: 0.5, samples: 48});
+  const p = row(show("dot as source", exposed(plain, 1)), 90), g = row(show("dot as glow, gain 30", exposed(glow, 1)), 90);
+  assert(p[180] < 120, "plain trail too bright: " + p[180]);
+  assert(g[180] > 240, "glow trail not saturated: " + g[180]);
+  return `trail at x=180: plain ${p[180]}, glow ${g[180]}`;
+});
+test("sample count: cost per frame (this backend)", () => {
+  const notes = [];
+  for (const n of [4, 16, 64]) {
+    const e = Kino.shutterIntegrate({width: 1280, height: 720, source: (ctx, s) => { ctx.fillStyle = "#888"; ctx.fillRect(0, 0, 1280, 720); scene(ctx, s); }, duration: 0.5, samples: n});
+    const c = canvas(1280, 720).getContext("2d");
+    e(c, 0.1);
+    const t0 = performance.now();
+    for (let i = 0; i < 3; i++) e(c, 0.2 + i * 0.1);
+    notes.push(`${n}: ${((performance.now() - t0) / 3).toFixed(0)} ms`);
+  }
+  return "1280x720 frame, " + notes.join(", ");
+});
+run();
+</script></body></html>
