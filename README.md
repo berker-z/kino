@@ -1,6 +1,8 @@
 # kino
 
-A motion design library for [HyperFrames](https://github.com/heygen-com/hyperframes), which renders HTML pages into video. kino is what my music videos are built from: it reads the song, draws things in time with it, and makes the picture look printed, exposed or shown on a tube instead of on a monitor.
+Kino is a modular motion-design toolkit for [HyperFrames](https://github.com/heygen-com/hyperframes). It collects reusable drawing primitives, procedural animation, rendering passes, and visual styles for making code-driven video. Instead of building every composition from scratch, you can combine different sources, ways of moving through a scene, and materials that determine how the finished image looks.
+
+The core idea is separation: a source draws the image, an arrangement controls its movement, and a pass gives it a material character, from cyanotype and risograph to phosphor and ordered dithering. These parts are designed to mix. Kino also has audio-analysis signals for making visuals respond to beats, energy, and waveforms, but the toolkit isn't limited to music-driven work.
 
 <table>
   <tr>
@@ -13,13 +15,13 @@ A motion design library for [HyperFrames](https://github.com/heygen-com/hyperfra
   </tr>
 </table>
 
-Those are four looks rendering the same short piece, "The Future of Speech": blueprint, cyanotype, phosphor and riso. `examples/styles/index.html` has more stills from each.
+These stills show four visual languages built with the same toolkit: blueprint, cyanotype, phosphor, and riso. The examples use audio-reactive compositions, but the underlying sources, arrangements, and passes can be reused independently. See `examples/styles/index.html` for more.
 
 ## How it works
 
-Every frame goes through the same pipeline. Signals read the song (beats, bars, drum hits, spectrum, bass). Sources paint a grayscale picture. Arrangements move it in time. A pass turns the grayscale into a medium: ink on paper, phosphor, a two-colour riso print, an ordered dither.
+Every frame goes through the same pipeline. Sources paint a grayscale picture, arrangements move it in time, and a pass turns the grayscale into a medium: ink on paper, phosphor, a two-colour riso print, an ordered dither. When a piece follows music, signals read the song first (beats, bars, drum hits, spectrum, bass) and drive the rest.
 
-The rule that holds it together is that sources only paint grayscale and the pass decides what that becomes. So any source goes through any pass, and a look is just a pass setting plus a palette and some motion rules. blueprint's pen drawings, for example, run under the cyanotype material with no library changes.
+Because sources paint grayscale and the pass decides what that becomes, most sources work under most passes, and a look is a pass setting plus a palette and some motion rules. blueprint's pen drawings, for example, run under the cyanotype material with no library changes. The passes don't all read their input the same way, though: `risoPass` takes two separations, one per ink, and `screenPass` has a colour mode. `docs/architecture.md` has the table.
 
 Everything is a pure function of time. HyperFrames seeks frames in any order, so nothing is allowed to remember the previous frame, and anything time-driven paints through `timeDriver` instead of GSAP callbacks (which don't fire during a render).
 
@@ -57,7 +59,7 @@ The music and its analysis aren't in the repo, so most compositions won't render
 
 ## Status
 
-A personal library, built for my own videos and changing as they need it. The canvas looks are where the work is. The `dom/` pieces (GSAP on HTML elements) are from the first round and still work, but nothing new uses them.
+A personal, evolving library rather than a published package: there's nothing on npm, and it changes as the pieces built with it need. The canvas looks are where the work is. The `dom/` pieces (GSAP on HTML elements) are from the first round and still work, but nothing new uses them.
 
 ## License
 
