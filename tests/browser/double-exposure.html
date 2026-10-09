@@ -1,0 +1,83 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>doubleExposure</title><script src="../../node_modules/gsap/dist/gsap.min.js"></script><script src="../../dist/kino.js"></script><script src="harness.js"></script></head>
+<body><script>
+// doubleExposure on a 64x32 synthetic fixture. Foreground: flat gray 0.25.
+// Interior: flat colour whose red encodes t. Mask: a disc (alpha) with a
+// hole in it, or the same shapes as gray levels (luma).
+const W = 64, H = 32;
+const fg = (ctx) => { ctx.fillStyle = "rgb(64,64,64)"; ctx.fillRect(0, 0, W, H); };
+const interior = (ctx, t) => { ctx.fillStyle = `rgb(${Math.round(t * 20)},200,100)`; ctx.fillRect(0, 0, W, H); };
+// Left half covered, a 4x4 hole at (8..12, 8..12); right half uncovered.
+const alphaMask = (ctx) => { ctx.fillStyle = "rgba(255,0,0,1)"; ctx.fillRect(0, 0, 32, H); ctx.clearRect(8, 8, 4, 4); };
+// The same coverage in luma: white left, black hole, plus a 50% gray strip on the right.
+const lumaMask = (ctx) => { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, 32, H); ctx.fillStyle = "#000"; ctx.fillRect(8, 8, 4, 4); ctx.fillStyle = "rgb(128,128,128)"; ctx.fillRect(48, 0, 16, H); };
+function render(opts, t) {
+  const c = canvas(W, H); const g = c.getContext("2d");
+  g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+  Kino.doubleExposure({width: W, height: H, foreground: fg, interior, ...opts})(g, t);
+  return c;
+}
+test("replace, alpha mask: interior inside, foreground outside and in the hole", () => {
+  const m = canvas(W, H); alphaMask(m.getContext("2d"));
+  show("mask (alpha): left half covered, 4x4 hole", m);
+  const c = show("result: green interior inside, gray fg outside and in the hole", render({mask: alphaMask, blend: "replace", mix: 1}, 5));
+  assert(near(px(c, 20, 20), [100, 200, 100, 255]), "inside " + px(c, 20, 20));
+  assert(near(px(c, 40, 20), [64, 64, 64, 255]), "outside " + px(c, 40, 20));
+  assert(near(px(c, 10, 10), [64, 64, 64, 255]), "hole " + px(c, 10, 10));
+});
+test("alpha mode ignores mask colour; luma mode reads it", () => {
+  const a = show("same red mask, alpha mode: full cover", render({mask: alphaMask, maskMode: "alpha", blend: "replace"}, 5));
+  // A red (luma 0.21) opaque mask in luma mode covers only ~21%.
+  const l = show("luma mode: red reads as 21% coverage", render({mask: alphaMask, maskMode: "luma", blend: "replace"}, 5));
+  assert(near(px(a, 20, 20), [100, 200, 100, 255]));
+  const v = px(l, 20, 20);
+  assert(Math.abs(v[1] - (64 + (200 - 64) * 0.2126)) < 4, "luma of red " + v);
+});
+test("luma mask: white covers, black is a hole, 50% gray is half", () => {
+  const m = canvas(W, H); const mg = m.getContext("2d"); mg.fillStyle = "#000"; mg.fillRect(0, 0, W, H); lumaMask(mg);
+  show("mask (luma): white, black hole, 50% gray strip right", m);
+  const c = show("result: half-strength interior in the gray strip", render({mask: lumaMask, maskMode: "luma", blend: "replace"}, 5));
+  assert(near(px(c, 20, 20), [100, 200, 100, 255]));
+  assert(near(px(c, 10, 10), [64, 64, 64, 255]));
+  const v = px(c, 56, 20);
+  assert(Math.abs(v[1] - (64 + (200 - 64) * 0.502)) < 3, "half " + v);
+});
+test("white-on-black image as an ALPHA mask covers everything (opaque is opaque)", () => {
+  const opaque = (ctx) => { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H); lumaMask(ctx); };
+  const c = show("white-on-black as alpha: the black is opaque, so it's covered too", render({mask: opaque, maskMode: "alpha", blend: "replace"}, 5));
+  assert(near(px(c, 40, 20), [100, 200, 100, 255]), "black area still covered " + px(c, 40, 20));
+});
+test("mix endpoints: 0 is the foreground exactly; replace at 1 is the interior exactly", () => {
+  const z = render({mask: alphaMask, blend: "replace", mix: 0}, 5);
+  const fgOnly = canvas(W, H); fg(fgOnly.getContext("2d"));
+  assert(maxDiff(pixels(z), pixels(fgOnly)) === 0, "mix 0");
+  const s = render({mask: alphaMask, blend: "screen", mix: 0}, 5);
+  assert(maxDiff(pixels(s), pixels(fgOnly)) === 0, "screen mix 0");
+  show("mix 0: foreground only", z);
+  const half = show("mix 0.5", render({mask: alphaMask, blend: "replace", mix: 0.5}, 5));
+  show("mix 1", render({mask: alphaMask, blend: "replace", mix: 1}, 5));
+  assert(Math.abs(px(half, 20, 20)[1] - 132) <= 2, "half mix " + px(half, 20, 20));
+});
+test("screen: screen(fg, m c B) inside, fg outside", () => {
+  const c = show("screen blend: light adds", render({mask: alphaMask, blend: "screen", mix: 1}, 5));
+  const scr = (a, b) => 255 - ((255 - a) * (255 - b)) / 255;
+  const v = px(c, 20, 20);
+  assert(near(v, [scr(64, 100), scr(64, 200), scr(64, 100), 255], 2), "screen " + v);
+  assert(near(px(c, 40, 20), [64, 64, 64, 255]));
+});
+test("no foreground: black outside", () => {
+  const c = canvas(W, H); const g = c.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+  Kino.doubleExposure({width: W, height: H, interior, mask: alphaMask, blend: "replace"})(g, 5);
+  show("no foreground", c);
+  assert(near(px(c, 40, 20), [0, 0, 0, 255]));
+});
+test("repeat seek: t = 4, 1, 7, 4 gives the same frame at 4", () => {
+  const de = Kino.doubleExposure({width: W, height: H, foreground: fg, interior, mask: lumaMask, maskMode: "luma", blend: "replace", mix: (t) => t / 10});
+  const c = canvas(W, H); const g = c.getContext("2d");
+  const at = (t) => { g.fillStyle = "#000"; g.fillRect(0, 0, W, H); de(g, t); return Array.from(pixels(c)); };
+  const first = at(4); show("t=4", c); at(1); show("then t=1", c); at(7); show("then t=7", c);
+  assert(maxDiff(first, at(4)) === 0);
+  show("t=4 again: identical", c);
+});
+run();
+</script></body></html>

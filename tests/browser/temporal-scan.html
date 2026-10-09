@@ -1,0 +1,81 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>temporalScan</title><script src="../../dist/kino.js"></script><script src="harness.js"></script></head>
+<body><script>
+const W = 320, H = 120;
+// A source that encodes its sample time as colour: red = time * 20.
+const clock = (ctx, time) => { ctx.fillStyle = `rgb(${Math.round(time * 20)},60,${255 - Math.round(time * 20)})`; ctx.fillRect(0, 0, W, H); };
+// A source you can read by eye: a bar moving right at 60 px/s and a ball on a sine.
+const mover = (ctx, time) => {
+  ctx.fillStyle = "#0A1022"; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "#3E5687"; ctx.lineWidth = 1;
+  for (let x = 0.5; x < W; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  ctx.fillStyle = "#BFD4FF";
+  ctx.fillRect(40 + time * 60, 20, 24, 80);
+  ctx.beginPath(); ctx.arc(160 + 100 * Math.sin(time * 2), 60, 10, 0, 7); ctx.fill();
+};
+function scan(source, t, opts) {
+  const c = canvas(W, H); const g = c.getContext("2d");
+  Kino.temporalScan(g, t, {width: W, height: H, bands: 32, span: 0, source, ...opts});
+  return c;
+}
+test("span 0 equals the ordinary source at t", () => {
+  const plain = canvas(W, H); mover(plain.getContext("2d"), 2);
+  show("source at t=2", plain);
+  const s = show("temporalScan, 32 strips, span 0", scan(mover, 2, {}));
+  // Antialiased curves rasterise slightly differently when clipped to a
+  // strip (Skia's AA path under a clip), so edge pixels of the ball can
+  // differ. Flat fills and pixel-aligned lines must match exactly.
+  const a = pixels(plain), b = pixels(s);
+  const diff = canvas(W, H); const dg = diff.getContext("2d"); const img = dg.createImageData(W, H);
+  let off = 0, d = 0;
+  for (let i = 0; i < a.length; i += 4) {
+    const e = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2]));
+    d = Math.max(d, e); if (e > 2) off++;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = Math.min(255, e * 8); img.data[i + 3] = 255;
+  }
+  dg.putImageData(img, 0, 0);
+  show("|difference| x8: only antialiased curve edges", diff);
+  assert(off / (W * H) < 0.002, `${off} pixels differ`);
+  return `${off} of ${W * H} pixels differ (max ${d}/255), all on antialiased curve edges`;
+});
+test("nonzero span: each strip's colour encodes its own sample time", () => {
+  const c = show("clock source, 16 strips, span 4 s: red = time", scan(clock, 5, {bands: 16, span: 4}));
+  const strips = Kino.scanStrips(5, {width: W, height: H, bands: 16, span: 4});
+  for (const s of strips) {
+    const v = px(c, s.x + (s.w >> 1), 60);
+    assert(Math.abs(v[0] - Math.round(s.time * 20)) <= 1, `strip ${s.index}: red ${v[0]}, want ${Math.round(s.time * 20)}`);
+  }
+  assert(px(c, 5, 60)[0] !== px(c, 25, 60)[0], "neighbours sample the same time");
+  return `strip times ${strips[0].time.toFixed(3)} … ${strips[15].time.toFixed(3)}`;
+});
+test("the moving bar shears through time; axis and direction change the shape", () => {
+  show("x axis, span 1.5", scan(mover, 2.5, {span: 1.5, bands: 64}));
+  show("x axis, direction -1", scan(mover, 2.5, {span: 1.5, bands: 64, direction: -1}));
+  show("y axis, span 1.5", scan(mover, 2.5, {span: 1.5, bands: 64, axis: "y"}));
+});
+test("out-of-order seeks: t = 4, 1, 7, 4 reproduce frame 4", () => {
+  const c = canvas(W, H); const g = c.getContext("2d");
+  const at = (t) => { Kino.temporalScan(g, t, {width: W, height: H, bands: 48, span: 1.2, source: mover}); return Array.from(pixels(c)); };
+  const a = at(4); show("t=4", c); at(1); at(7); const b = at(4); show("t=4 after 1 and 7", c);
+  assert(maxDiff(a, b) === 0);
+});
+test("cost at 2560x1440: 48 and 96 strips of a light procedural source", () => {
+  const BW = 2560, BH = 1440;
+  const big = canvas(BW, BH); const g = big.getContext("2d");
+  const src = (ctx, time, strip) => {
+    ctx.fillStyle = "#0A1022"; ctx.fillRect(strip.x, strip.y, strip.w, strip.h);
+    ctx.fillStyle = "#BFD4FF"; ctx.fillRect(200 + time * 300, 300, 120, 800);
+    ctx.beginPath(); ctx.arc(1280 + 900 * Math.sin(time), 720, 60, 0, 7); ctx.fill();
+  };
+  const ms = (bands) => {
+    const t0 = performance.now();
+    for (let i = 0; i < 10; i++) Kino.temporalScan(g, i / 30, {width: BW, height: BH, bands, span: 1, source: src});
+    g.getImageData(0, 0, 1, 1);
+    return (performance.now() - t0) / 10;
+  };
+  // Under --virtual-time-budget performance.now() isn't wall time; the real
+  // number comes from timing the composition's render.
+  return `48 strips ${ms(48).toFixed(1)} ms, 96 strips ${ms(96).toFixed(1)} ms (virtual time in the test runner: indicative only)`;
+});
+run();
+</script></body></html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>filmPass</title><script src="../../node_modules/gsap/dist/gsap.min.js"></script><script src="../../dist/kino.js"></script><script src="harness.js"></script></head>
+<body><div id="stage" style="position:relative;width:480px;height:270px;display:none"></div><script>
+const W = 480, H = 270;
+// A test card: a gray ramp, a dark field with a small bright window (for
+// halation), and white bars (type stand-ins).
+function card(ctx) {
+  const g = ctx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "#000"); g.addColorStop(1, "#fff");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, 60);
+  ctx.fillStyle = "#0b0b0b"; ctx.fillRect(0, 60, W, 210);
+  ctx.fillStyle = "#fff"; ctx.fillRect(300, 120, 40, 40);
+  for (let i = 0; i < 4; i++) ctx.fillRect(40, 100 + i * 30, 180 - i * 30, 10);
+}
+function film(opts) {
+  const host = document.createElement("div"); document.getElementById("stage").appendChild(host);
+  const tl = gsap.timeline({paused: true});
+  const out = Kino.filmPass(host, tl, {width: W, height: H, duration: 2, fps: 24, paint: (ctx) => card(ctx), ...opts});
+  const frame = (t) => { tl.seek(t); const c = canvas(W, H); c.getContext("2d").drawImage(out, 0, 0); return c; };
+  return frame;
+}
+const source = () => { const c = canvas(W, H); const g = c.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, W, H); card(g); return c; };
+test("strength 0 is a passthrough (no weave, curve, grain or halation)", () => {
+  const s = show("source", source());
+  const f = show("filmPass strength 0", film({strength: 0})(1));
+  const d = maxDiff(pixels(s), pixels(f));
+  assert(d <= 1, "max diff " + d);
+  return `max channel diff ${d}`;
+});
+test("strength 1: treated, and halation brightens the dark next to the window", () => {
+  const s = source();
+  const on = show("filmPass defaults", film({})(1));
+  const off = show("halation 0", film({halation: 0})(1));
+  show("halation 1.2 (exaggerated)", film({halation: 1.2})(1));
+  const near = (c) => { const d = c.getContext("2d").getImageData(345, 130, 10, 20).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i]; return s / (d.length / 4); };
+  assert(near(on) > near(off) + 3, `red beside window: on ${near(on).toFixed(1)}, off ${near(off).toFixed(1)}`);
+  return `red beside the window: ${near(off).toFixed(1)} -> ${near(on).toFixed(1)}`;
+});
+test("grain moves frame to frame, but the same frame is the same after other seeks", () => {
+  const f = film({grain: 0.25});
+  const a = f(0.5); show("t=0.5, grain 0.25", a);
+  const b = f(1.0); show("t=1.0", b);
+  f(1.7);
+  const c = f(0.5); show("t=0.5 again", c);
+  assert(maxDiff(pixels(a), pixels(b)) > 0, "grain froze");
+  assert(maxDiff(pixels(a), pixels(c)) === 0, "not repeatable");
+});
+test("toning keeps luma, changes hue", () => {
+  show("toning sepia", film({toning: ["#1a1410", "#efe2c8"]})(1));
+  show("toning cold", film({toning: ["#0a1022", "#dfe8ff"]})(1));
+});
+run();
+</script></body></html>

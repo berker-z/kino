@@ -1,0 +1,104 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>typeReveal</title><link rel="stylesheet" href="../../compositions/smoke/vendor/fonts.css"><script src="../../dist/kino.js"></script><script src="harness.js"></script></head>
+<body><script>
+const W = 900, H = 420;
+const html = `<div class="pg">
+  <h1 data-part="word" data-chars="word">MONOLITH</h1>
+  <p data-lines="para" data-part="para">It was found in the dry season, standing where no road went, and nobody who saw it could agree on its height.</p>
+</div>`;
+const css = `.pg { position:absolute; inset:0; padding:40px; color:#fff; font-family:"Inter Tight"; }
+ h1 { margin:0; font-weight:500; font-size:120px; letter-spacing:0.18em; line-height:1; }
+ p { margin:40px 0 0 300px; width:420px; font-size:22px; line-height:1.35; font-weight:400; }`;
+let plate;
+async function getPlate() {
+  if (plate) return plate;
+  await document.fonts.load('500 120px "Inter Tight"'); await document.fonts.load('400 22px "Inter Tight"');
+  try { plate = await Kino.htmlPlate({html, css, width: W, height: H}); plate.fonts = "Inter Tight"; }
+  catch (e) {
+    // fetch() can't read file:// fonts to inline them; fall back to a system face for layout tests.
+    plate = await Kino.htmlPlate({html, css: css.replace(/"Inter Tight"/g, "sans-serif"), width: W, height: H}); plate.fonts = "system sans-serif (file:// font inlining unavailable)";
+  }
+  return plate;
+}
+const blank = () => { const c = canvas(W, H); const g = c.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, W, H); return [c, g]; };
+test("the plate measures the word and one box per rendered line", async () => {
+  const p = await getPlate();
+  const [c, g] = blank(); g.drawImage(p.canvas, 0, 0);
+  g.strokeStyle = "#ff7b6b"; const b = p.parts.word; g.strokeRect(b.x + .5, b.y + .5, b.w, b.h);
+  g.strokeStyle = "#8fd18f"; for (const l of p.lines.para) g.strokeRect(l.x + .5, l.y + .5, l.w, l.h);
+  show("plate with measured word box (red) and line boxes (green)", c, 1);
+  assert(p.lines.para.length >= 3, "lines " + p.lines.para.length);
+  for (let i = 1; i < p.lines.para.length; i++) assert(p.lines.para[i].y > p.lines.para[i - 1].y + 10, "lines not stacked");
+  return `${p.lines.para.length} lines; font ${p.fonts}`;
+});
+test("fragments at progress 0, 0.5, 1; at 1 the assembled word is pixel-identical to the intact raster", async () => {
+  const p = await getPlate(); const box = p.parts.word;
+  const frags = Kino.inkedFragments(p, Kino.fragmentGrid(box, {cols: 26, rows: 2, seed: 3}));
+  const at = (q, dx = box.x, dy = box.y) => { const [c, g] = blank(); Kino.drawFragments(g, p, box, frags, Math.floor(dx), Math.floor(dy), q); return c; };
+  const z = show("p = 0", at(0), 1), h = show("p = 0.5", at(0.5), 1), f = show("p = 1", at(1), 1);
+  const [ref, rg] = blank(); rg.drawImage(p.canvas, 0, 0, W, H, 0, 0, W, H);
+  // Compare inside the word box only (the plate also has the paragraph).
+  const crop = (c) => c.getContext("2d").getImageData(Math.floor(box.x), Math.floor(box.y), Math.ceil(box.w) + 1, Math.ceil(box.h) + 1).data;
+  const d = maxDiff(crop(f), crop(ref));
+  assert(d === 0, "seam: max diff " + d);
+  let lit = 0; const zd = crop(z); for (let i = 0; i < zd.length; i += 4) lit += zd[i] > 0;
+  assert(lit === 0, "p=0 not empty");
+  return `${frags.length} inked slabs of ${26 * 3}`;
+});
+test("drawn at a fractional offset, neighbouring slabs leave seams (documented limit)", async () => {
+  const p = await getPlate(); const box = p.parts.word;
+  const frags = Kino.inkedFragments(p, Kino.fragmentGrid(box, {cols: 26, rows: 2, seed: 3}));
+  const [a, ga] = blank(); ga.translate(0.5, 0.37); Kino.drawFragments(ga, p, box, frags, Math.floor(box.x), Math.floor(box.y), 1);
+  const [b, gb] = blank(); gb.translate(0.5, 0.37); gb.drawImage(p.canvas, 0, 0);
+  const diff = canvas(W, H); const dg = diff.getContext("2d"); dg.drawImage(a, 0, 0); dg.globalCompositeOperation = "difference"; dg.drawImage(b, 0, 0);
+  dg.globalCompositeOperation = "source-over"; dg.filter = "brightness(8)"; dg.drawImage(diff, 0, 0);
+  show("|fragments - intact| at (+0.5, +0.37) px, brightened 8x", diff, 1);
+  const d = maxDiff(pixels(a), pixels(b));
+  return `max diff ${d}/255 at a fractional offset; draw slabs into a layer at whole px and move the layer`;
+});
+test("line rise at 0, 0.4, 1; at 1 lines sit exactly where the plate set them", async () => {
+  const p = await getPlate(); const lines = p.lines.para;
+  const at = (q) => { const [c, g] = blank(); Kino.lineRise(g, p, lines, 0, 0, q); return c; };
+  show("p = 0", at(0), 1); show("p = 0.4", at(0.4), 1); const f = show("p = 1", at(1), 1);
+  const b = p.parts.para;
+  const crop = (c) => c.getContext("2d").getImageData(Math.floor(b.x), Math.floor(b.y), Math.ceil(b.w), Math.ceil(b.h)).data;
+  const [ref, rg] = blank(); rg.drawImage(p.canvas, 0, 0);
+  const diff = canvas(W, H); const dg = diff.getContext("2d"); dg.drawImage(f, 0, 0); dg.globalCompositeOperation = "difference"; dg.drawImage(ref, 0, 0);
+  show("|risen - plate| at p = 1", diff, 1);
+  const A = crop(f), B = crop(ref); let d = 0, where = null;
+  for (let i = 0; i < A.length; i += 4) { const e = Math.abs(A[i] - B[i]); if (e > d) { d = e; where = [(i / 4) % Math.ceil(b.w), Math.floor(i / 4 / Math.ceil(b.w))]; } }
+  assert(d === 0, `max diff ${d} at ${where} in the paragraph box; lines ${JSON.stringify(lines.map((l) => [Math.round(l.y), Math.round(l.h)]))}`);
+});
+test("out-of-order: progress 0.5 drawn after 0.9 and 0.1 is the same", async () => {
+  const p = await getPlate(); const box = p.parts.word;
+  const frags = Kino.fragmentGrid(box, {cols: 26, rows: 2, seed: 3});
+  const [c, g] = blank();
+  const at = (q) => { g.fillStyle = "#000"; g.fillRect(0, 0, W, H); Kino.drawFragments(g, p, box, frags, Math.floor(box.x), Math.floor(box.y), q); Kino.lineRise(g, p, p.lines.para, 0, 0, q); return Array.from(pixels(c)); };
+  const a = at(0.5); at(0.9); at(0.1);
+  assert(maxDiff(a, at(0.5)) === 0);
+});
+test("letter strokes: stems, bars and curves, which together are the word exactly", async () => {
+  const p = await getPlate(); const box = p.parts.word;
+  const st = Kino.letterStrokes(p, p.chars.word);
+  const colour = {stem: "#ff7b6b", bar: "#8fd18f", curve: "#7fb0ff"};
+  const [c, g] = blank();
+  for (const piece of st.pieces) {
+    const t = canvas(piece.w, piece.h); const tg = t.getContext("2d");
+    tg.drawImage(piece.canvas, 0, 0); tg.globalCompositeOperation = "source-in"; tg.fillStyle = colour[piece.kind]; tg.fillRect(0, 0, piece.w, piece.h);
+    g.drawImage(t, piece.x, piece.y);
+  }
+  g.strokeStyle = "#555"; g.beginPath(); g.moveTo(0, st.guides.cap + .5); g.lineTo(W, st.guides.cap + .5); g.moveTo(0, st.guides.baseline - .5); g.lineTo(W, st.guides.baseline - .5); g.stroke();
+  show("stems red, bars green, curves blue; guides at cap height and baseline", c, 1);
+  const [a, ga] = blank(); for (const piece of st.pieces) Kino.drawStroke(ga, piece, 0, 0, 1);
+  const [ref, rg] = blank(); rg.drawImage(p.canvas, 0, 0);
+  const crop = (x) => x.getContext("2d").getImageData(Math.floor(box.x), Math.floor(box.y), Math.ceil(box.w), Math.ceil(box.h)).data;
+  const d = maxDiff(crop(a), crop(ref));
+  assert(d === 0, "pieces don't add up: max diff " + d);
+  const n = (k) => st.pieces.filter((x) => x.kind === k).length;
+  const letters = (k) => [...new Set(st.pieces.filter((x) => x.kind === k).map((x) => x.char))].join("");
+  assert(!letters("stem").includes("O"), "O has a stem");
+  assert(letters("stem").includes("I") && letters("stem").includes("L") && letters("stem").includes("M"), "missing stems: " + letters("stem"));
+  return `${n("stem")} stems (${letters("stem")}), ${n("bar")} bars (${letters("bar")}), ${n("curve")} curves (${letters("curve")})`;
+});
+run();
+</script></body></html>

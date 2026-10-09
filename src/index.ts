@@ -63,10 +63,21 @@ export {beam, beamText} from "./sources/beam";
 export type {BeamOptions} from "./sources/beam";
 export {htmlPlate, drawPart} from "./sources/html-plate";
 export {clamp, progress, smooth, easeOut, easeInOut} from "./utils/timing";
-export type {HtmlPlate, HtmlPlateOptions, PartBox} from "./sources/html-plate";
+export type {HtmlPlate, HtmlPlateOptions, PartBox, CharBox} from "./sources/html-plate";
 export {teletext, teletextColors, sixels, sixelText} from "./sources/teletext";
 export type {Cell as TeletextCell, Page as TeletextPage} from "./sources/teletext";
 // Arrangement
 export {sheetCamera} from "./arrange/sheet-camera";
 export type {Shot} from "./arrange/sheet-camera";
 export {printRun, registerDrift} from "./arrange/print-run";
+export {doubleExposure} from "./arrange/double-exposure";
+export type {DoubleExposure, DoubleExposureOptions, MaskMode, ExposureBlend} from "./arrange/double-exposure";
+export {fragmentGrid, inkedFragments, drawFragments, lineProgress, lineRise} from "./arrange/type-reveal";
+export type {Fragment, FragmentOptions, LineRiseOptions} from "./arrange/type-reveal";
+export {letterStrokes, classifyStrokes, drawStroke} from "./arrange/letter-strokes";
+export type {StrokeKind, StrokePiece, LetterStrokes, StrokeOptions, WipeDirection} from "./arrange/letter-strokes";
+export {temporalScan, scanStrips} from "./arrange/temporal-scan";
+export type {TimeSource, Strip, TemporalScanOptions} from "./arrange/temporal-scan";
+// Passes (later additions)
+export {filmPass, filmDefaults, gateWeave, thresholdFilter} from "./passes/film-pass";
+export type {FilmPassOptions, FilmSettings, FilmPainter} from "./passes/film-pass";

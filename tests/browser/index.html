@@ -1,0 +1,11 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>kino browser tests</title>
+<style>body{background:#101012;color:#ddd;font:15px/1.6 ui-monospace,monospace;margin:32px}a{color:#BFD4FF}li{margin:6px 0}span{color:#888}</style></head>
+<body><h1 style="font-size:17px">kino browser tests</h1>
+<p><span>Each page runs its checks in the browser and shows the canvases it checked. <code>npm run test:browser</code> runs the same pages headless.</span></p>
+<ul>
+<li><a href="double-exposure.html">double-exposure.html</a> <span>alpha vs luma masks, holes, mix endpoints, screen vs replace, repeat seek</span></li>
+<li><a href="film-pass.html">film-pass.html</a> <span>strength 0 passthrough, halation, grain repeatability, toning</span></li>
+<li><a href="temporal-scan.html">temporal-scan.html</a> <span>span 0 = source, strips encode their times, shear, out-of-order seeks</span></li>
+<li><a href="type-reveal.html">type-reveal.html</a> <span>measured lines, fragments at 0 / 0.5 / 1, seams, line rise</span></li>
+</ul></body></html>
