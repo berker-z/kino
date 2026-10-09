@@ -74,6 +74,12 @@ export function beatMap(map: AudioMap) {
  * fixed metronome.
  */
 export function beatTicks(beats: readonly number[], {subdivision = 2, until}: {subdivision?: number; until: number}): number[] {
+  // The extension loops below step by the average period, so a grid that
+  // isn't strictly increasing would make them run forever.
+  if (beats.length < 2) throw new RangeError(`beatTicks: need at least two beats, got ${beats.length}`);
+  for (let i = 1; i < beats.length; i++) {
+    if (!(beats[i] > beats[i - 1])) throw new RangeError(`beatTicks: beat times must strictly increase (beat ${i}: ${beats[i - 1]} then ${beats[i]})`);
+  }
   const period = (beats[beats.length - 1] - beats[0]) / (beats.length - 1);
   const grid: number[] = [];
   for (let b = beats[0] - period; b > -period; b -= period) grid.unshift(b);
@@ -88,6 +94,7 @@ export function beatTicks(beats: readonly number[], {subdivision = 2, until}: {s
 
 /** Index of the tick interval containing t, and progress 0–1 through it. */
 export function tickAt(ticks: readonly number[], t: number): {index: number; progress: number} {
+  if (ticks.length < 2) throw new RangeError(`tickAt: need at least two ticks, got ${ticks.length}`);
   let lo = 0;
   let hi = ticks.length - 2;
   while (lo < hi) {

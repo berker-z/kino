@@ -6,6 +6,7 @@ import type {Spectrum} from "../sources/spectrum-feed";
 
 /** Mean energy (0-1) of spectrum bands [from, to) at time t, unsmoothed. */
 export function bandEnergy(spectrum: Spectrum, t: number, from = 0, to = 8): number {
+  if (!(to > from)) throw new RangeError(`bandEnergy: empty band range [${from}, ${to})`);
   const f = spectrum.frames[Math.round(t * spectrum.fps)] ?? [];
   let s = 0;
   for (let i = from; i < to; i++) s += f[i] ?? 0;
@@ -20,9 +21,16 @@ export function bandEnergy(spectrum: Spectrum, t: number, from = 0, to = 8): num
 export function bassFollower(spectrum: Spectrum, {bands = 8} = {}): (t: number) => number {
   const raw = spectrum.frames.map((f) => f.slice(0, bands).reduce((a, v) => a + v, 0) / bands);
   const sm = raw.map((_, i) => (raw[i - 1] ?? raw[i]) * 0.25 + raw[i] * 0.5 + (raw[i + 1] ?? raw[i]) * 0.25);
-  const lo = Math.min(...sm);
-  const hi = Math.max(...sm);
-  const track = sm.map((v) => (v - lo) / (hi - lo));
+  // A loop, not Math.min(...sm): spreading a long song's frames as arguments
+  // overflows the stack.
+  let lo = Infinity, hi = -Infinity;
+  for (const v of sm) {
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  // A constant (or silent) song has no range to normalise to: it reads as 0.
+  const range = hi - lo;
+  const track = sm.map((v) => (range > 1e-9 ? (v - lo) / range : 0));
   return (t) => {
     const f = t * spectrum.fps;
     const i = Math.floor(f);
