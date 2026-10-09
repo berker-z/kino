@@ -1,0 +1,97 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>surfaceProject</title><script src="../../dist/kino.js"></script><script src="harness.js"></script></head>
+<body><script>
+const W = 400, H = 240, CW = 160, CH = 90;
+// A textured wall: mid-grey with darker joints and a brighter block.
+function wall(ctx) {
+  ctx.fillStyle = "#6a6a6a"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#3c3c3c";
+  for (let y = 0; y < H; y += 30) ctx.fillRect(0, y, W, 3);
+  for (let x = 0; x < W; x += 50) ctx.fillRect(x, 0, 3, H);
+  ctx.fillStyle = "#9a9a9a"; ctx.fillRect(250, 60, 60, 60);
+}
+// A numbered 4x4 grid: each cell a distinct colour, with its index in red/green.
+const cellColor = (i, j) => [40 + 60 * i, 40 + 60 * j, 200];
+function grid(ctx) {
+  for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) {
+    const [r, g, b] = cellColor(i, j);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect((i * CW) / 4, (j * CH) / 4, CW / 4, CH / 4);
+  }
+  ctx.fillStyle = "#fff"; ctx.font = "bold 14px monospace";
+  for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) ctx.fillText(String(j * 4 + i), (i * CW) / 4 + 4, (j * CH) / 4 + 16);
+}
+const QUAD = [[60, 40], [340, 80], [330, 200], [80, 210]];
+const make = (o = {}) => Kino.surfaceProject({width: W, height: H, surface: wall, image: grid, contentWidth: CW, contentHeight: CH, quad: QUAD, intensity: 1.5, edge: 0.001, hotspot: 0, ...o});
+const render = (p, t = 0) => { const c = canvas(W, H); const g = c.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, W, H); p(g, t); return c; };
+const raw = () => { const c = canvas(W, H); wall(c.getContext("2d")); return c; };
+
+test("the numbered grid lands where the homography says: each cell's centre gets that cell's colour", () => {
+  const p = render(make({albedoGain: 1.5, intensity: 1.2, surface: (ctx) => { ctx.fillStyle = "#6a6a6a"; ctx.fillRect(0, 0, W, H); }}));
+  show("projected grid on a flat wall", p, 2);
+  const m = Kino.squareToQuad(QUAD);
+  let checked = 0;
+  for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) {
+    const [x, y] = Kino.applyHomography(m, (i + 0.75) / 4, (j + 0.6) / 4);
+    const [r, g, b] = px(p, Math.round(x), Math.round(y));
+    const [er, eg] = cellColor(i, j);
+    // Order of red and green across the grid is what identifies the cell.
+    if (i > 0) { const [x0, y0] = Kino.applyHomography(m, (i - 0.25) / 4, (j + 0.6) / 4); assert(r > px(p, Math.round(x0), Math.round(y0))[0], `cell ${j * 4 + i}: red should grow with i`); }
+    if (j > 0) { const [x0, y0] = Kino.applyHomography(m, (i + 0.75) / 4, (j - 0.4) / 4); assert(g > px(p, Math.round(x0), Math.round(y0))[1], `cell ${j * 4 + i}: green should grow with j`); }
+    checked++;
+  }
+  return `${checked} cells in order`;
+});
+test("projected black adds no light: the surface is unchanged (exactly)", () => {
+  const p = render(make({image: (ctx) => { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, CW, CH); }}));
+  const d = maxDiff(pixels(raw()), pixels(show("black projection", p, 1)));
+  assert(d === 0, "max diff " + d);
+});
+test("intensity 0 is the raw surface (exactly); pixels outside the quad are unchanged at full intensity", () => {
+  const off = render(make({intensity: 0}));
+  assert(maxDiff(pixels(raw()), pixels(off)) === 0, "intensity 0 changed the surface");
+  const on = render(make({intensity: 3}));
+  const r = raw();
+  for (const [x, y] of [[10, 10], [390, 230], [200, 20], [20, 220], [395, 120]]) assert(near(px(on, x, y), px(r, x, y), 0), `outside pixel ${x},${y} changed`);
+});
+test("light is modulated by the wall: joints get less than stone, the bright block more", () => {
+  const white = (ctx) => { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, CW, CH); };
+  const p = show("white frame on the wall", render(make({image: white, intensity: 1})), 1);
+  const r = raw();
+  const gain = (x, y) => px(p, x, y)[0] - px(r, x, y)[0];
+  const stone = gain(215, 140), joint = gain(215, 151), block = gain(280, 90);
+  assert(stone > joint + 5 && block > stone, `added light: joint ${joint}, stone ${stone}, block ${block}`);
+  return `added light: joint ${joint}, stone ${stone}, bright block ${block}`;
+});
+test("occlusion removes the light behind it, and only there", () => {
+  const occ = (ctx) => { ctx.fillStyle = "#000"; ctx.fillRect(180, 0, 30, H); };
+  const p = show("occluded by a column matte", render(make({occlusion: occ, intensity: 3})), 1);
+  const r = raw();
+  assert(near(px(p, 195, 130), px(r, 195, 130), 0), "light behind the matte");
+  assert(px(p, 240, 130)[2] > px(r, 240, 130)[2] + 10, "no light beside the matte");
+});
+test("same t, same frame, after other seeks; a moving quad follows t", () => {
+  const p = make({quad: (t) => QUAD.map(([x, y]) => [x + 40 * t, y]), image: (ctx, t) => { grid(ctx); ctx.fillStyle = "#fff"; ctx.fillRect(t * 100, 0, 10, CH); }});
+  const a = render(p, 0.5); render(p, 0.1); render(p, 0.9);
+  const b = render(p, 0.5);
+  assert(maxDiff(pixels(a), pixels(b)) === 0, "not repeatable");
+  assert(maxDiff(pixels(a), pixels(render(p, 0.9))) > 0, "quad didn't move");
+});
+test("degenerate quads fail with a readable error, not NaN pixels", () => {
+  let msg = "";
+  try { make({quad: [[0, 0], [100, 100], [100, 0], [0, 100]]}); } catch (e) { msg = e.message; }
+  assert(/convex/.test(msg), "bow tie: " + msg);
+  const p = make({quad: () => [[0, 0], [10, 0], [20, 0], [0, 10]]});
+  msg = ""; try { render(p); } catch (e) { msg = e.message; }
+  assert(/line/.test(msg), "collinear at render time: " + msg);
+});
+test("cost per frame at 2560x1440, and GPU memory", () => {
+  const p = Kino.surfaceProject({width: 2560, height: 1440, surface: (ctx) => { ctx.fillStyle = "#555"; ctx.fillRect(0, 0, 2560, 1440); }, image: grid, quad: [[300, 200], [2200, 400], [2200, 1100], [300, 1300]]});
+  const c = canvas(2560, 1440).getContext("2d");
+  p(c, 0);
+  const t0 = performance.now();
+  for (let i = 0; i < 3; i++) p(c, i * 0.1);
+  return `${((performance.now() - t0) / 3).toFixed(0)} ms/frame (this backend); textures: surface + occlusion 2560x1440 RGBA8 (14.7 MB each), content 1280x720 (3.7 MB)`;
+});
+run();
+</script></body></html>

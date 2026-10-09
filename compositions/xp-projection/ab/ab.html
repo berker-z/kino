@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="../vendor/fonts.css" />
+    <script src="../vendor/gsap.min.js"></script>
+    <script src="../vendor/kino.js"></script>
+    <script src="../scene.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; position: relative; }
+      #root > div { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="6" data-width="2560" data-height="1440" data-fps="24"></div>
+    <script>
+      // Mechanical A/B for surfaceProject, 1 s each, all at scene time 9,
+      // all through the hero's filmPass settings:
+      //   0  the projected graphic, raw (the projector's frame)
+      //   1  naive: the same frame laid over the room as a rectangle at 55%
+      //   2  surfaceProject (the film's frame)
+      //   3  the same without the occlusion matte
+      //   4  a second content source: slow water footage
+      //   5  a numbered grid, to read the mapping
+      const W = 2560, H = 1440, FPS = 24, T = 9;
+      const root = document.getElementById("root");
+      const stage = (start) => { const d = document.createElement("div"); d.className = "clip"; Object.assign(d.dataset, { start, duration: 1, trackIndex: start }); root.appendChild(d); return d; };
+      const film = { grain: 0.03, halation: 0.25, halationColor: "#ffd9b0", halationThreshold: 0.6, contrast: 0.25, vignette: 0.35, weave: 0 };
+      function grid(ctx) {
+        for (let j = 0; j < 6; j++) for (let i = 0; i < 10; i++) {
+          ctx.fillStyle = (i + j) % 2 ? "#e8e8e8" : "#555";
+          ctx.fillRect(i * 128, j * 120, 128, 120);
+          ctx.fillStyle = (i + j) % 2 ? "#000" : "#fff";
+          ctx.font = "bold 54px monospace";
+          ctx.fillText(String(j * 10 + i).padStart(2, "0"), i * 128 + 30, j * 120 + 80);
+        }
+      }
+      sanctuaryScene().then((sc) => {
+        const tl = gsap.timeline({ paused: true });
+        const pass = (start, paint) => Kino.filmPass(stage(start), tl, { width: W, height: H, start, duration: 1, fps: FPS, paint: (ctx) => paint(ctx), ...film });
+        const content = document.createElement("canvas"); content.width = 1280; content.height = 720;
+        pass(0, (ctx) => { const g = content.getContext("2d"); g.save(); sc.engraving(g, T); g.restore(); ctx.drawImage(content, 0, 0, W, H); });
+        pass(1, (ctx) => {
+          sc.room(ctx, T);
+          const g = content.getContext("2d"); g.save(); sc.engraving(g, T); g.restore();
+          ctx.globalAlpha = 0.55; ctx.drawImage(content, 300, 380, 1500, 844); ctx.globalAlpha = 1;
+        });
+        pass(2, (ctx) => sc.project(ctx, T));
+        const opts = { width: W, height: H, surface: sc.room, albedo: sc.stone, quad: (t) => sc.QUAD.map(sc.toScreen(t)), intensity: sc.intensity, albedoGain: 1.3, color: "#fff2e2", edge: 0.01, hotspot: 0.45, softness: 1.2 };
+        const noOcc = Kino.surfaceProject({ ...opts, image: sc.engraving });
+        const water = Kino.surfaceProject({ ...opts, image: sc.water, occlusion: sc.shadows });
+        const gridded = Kino.surfaceProject({ ...opts, image: grid, occlusion: sc.shadows });
+        pass(3, (ctx) => noOcc(ctx, T));
+        pass(4, (ctx) => water(ctx, T));
+        pass(5, (ctx) => gridded(ctx, T));
+        window.__timelines["main"] = tl;
+      }).catch((e) => console.error("ab failed:", e && e.stack || e));
+    </script>
+  </body>
+</html>
