@@ -32,13 +32,13 @@ The showcase page with all four styles is `examples/styles/index.html` (videos n
 
 ## Open threads, in rough priority
 
-1. **Speed up `screenPass`.** The 24-tap disc blur is almost the whole render cost. Try a separable blur in two passes (render to a framebuffer).
+1. **Done 2026-10-09:** `screenPass` renders the screen once and blurs it, 2.5x faster at 1440p. See `ARCHITECTURE_AUDIT.md` for that day's whole review: the grille bug, the clock and signal fixes, tests, the smoke test, the experiments, and what's still open (teletext grille decision, teardown PROMOTE stage).
 2. **The cyanotype fine texture.** The woven speckle in the NousCon close-ups isn't reproduced; the softness blurs our beads away. Probably wants a texture applied after the blur.
 3. **Promote style-specific arrangements when reused:** the scope's mode squash and power-off, teletext's page search. Left in their compositions on purpose until a second piece needs them.
-4. **Try the mixes** in `docs/architecture.md` (pen kit under cyanotype, beam in riso, ridgelines as teletext).
-5. **The actual Future of Speech video** (52 s) in one of these languages. Ask Berker what the song means to him first: the words and imagery have been placeholders ("SPEECH", "LISTENING", invented zine copy).
+4. **Try the mixes** in `docs/architecture.md`. Pen kit under cyanotype and a sheet camera over a teletext wall are done (`compositions/xp-*`); beam in riso and ridgelines as teletext are not.
+5. ~~The Future of Speech video~~: not wanted. It was a test track (Berker, 2026-10-08).
 6. **More teardowns** whenever Berker has reference videos. Nous Research is the standing inspiration.
-7. `hyperframes check` crashed its browser ("Target closed") on screen-test. Snapshots and renders work; not investigated.
+7. `hyperframes check` crashed its browser ("Target closed") on screen-test once. It passes on the synthetic `smoke` composition; not reproduced since.
 8. A web/share encode: the riso render is 310 MB because a moving halftone defeats compression.
 
 ## Working with Berker (also in memory)

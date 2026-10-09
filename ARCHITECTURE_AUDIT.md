@@ -1,8 +1,8 @@
 # Kino architecture audit
 
-**Date:** 2026-10-09 · **Brief:** `KINO_ARCHITECTURE_REVIEW.md` (reviewed `5f8e073`) · **Audited at:** `a320219` (the brief's baseline plus the dither tool) · **Work since:** `3be5f85`..`d22efff`, all local, not pushed.
+**Date:** 2026-10-09 · **Brief:** `KINO_ARCHITECTURE_REVIEW.md` (reviewed `5f8e073`) · **Audited at:** `a320219` (the brief's baseline plus the dither tool) · **Work since:** `3be5f85`..`41249ca`, all local, not pushed.
 
-Every claim in the brief was checked against the code before anything was changed. Each finding below says whether it was **confirmed**, **refuted** or **open**, what the evidence is, and what happened. Phase 0 and Phase 1 of the brief are done; Phase 2 and the Phase 4 optimisation are proposed, not started, except where noted.
+Every claim in the brief was checked against the code before anything was changed. Each finding below says whether it was **confirmed**, **refuted** or **open**, what the evidence is, and what happened. Phases 0 and 1 are done; from Phase 2 the contract table, the luma fix and both cross-composition experiments are done; from Phase 3 one extraction (timing helpers); from Phase 4 the measured screenPass optimisation (2.2-2.5x) and the smoke path. Phase 5 (teardown PROMOTE) is blocked on a permission, see finding 13.
 
 ## Summary
 
@@ -15,14 +15,15 @@ Every claim in the brief was checked against the code before anything was change
 | 5 | WebGL setup asserts non-null, errors unnamed | P1 | **confirmed, fixed**: shared `passes/gl.ts` (`f9fa40e`) |
 | 6 | Seek determinism of `timeDriver` | P0/P1 | **verified correct** by tests; no change needed beyond #2 |
 | 7 | Look / material / motion grammar conflated | P1 design | **confirmed**; decision: document, don't split types yet |
-| 8 | Source/pass interchangeability has exceptions | P1 design | **confirmed**; contract table below, docs change proposed |
-| 9 | Shared mechanics trapped in compositions | P1 design | **open**: needs the two cross-composition experiments |
-| 10 | `screenPass` cost | P2 | **measured**: 98% is the 48 `screenAt` calls per pixel |
+| 8 | Source/pass interchangeability has exceptions | P1 design | **confirmed, documented**; riso and ditherCanvas now read luma (`110221c`) |
+| 9 | Shared mechanics trapped in compositions | P1 design | **experiments run** (`b8d65c6`); timing helpers extracted, nothing else yet |
+| 10 | `screenPass` cost | P2 | **measured and cut**: two-pass, 1595 → 648 ms/frame at 1440p (`908e574`) |
 | 11 | Toolchain is machine-specific, no smoke path | P2 | **partly fixed**: synthetic `smoke` composition + `scripts/smoke.sh` |
 | 12 | Public API broad | P2 | **confirmed, left alone** (no concrete pain) |
 | 13 | Teardown measures at a forced 4K | P2 | **confirmed, not fixed**: the skill folder is write-protected in agent sessions |
+| 14 | Taste rules mixed global and per-look | P2 | **split** in `docs/lessons.md` (`41249ca`) |
 
-Tests: `npm test`, 25 tests across the clock, signals and arrangements, all passing. Regression: every composition was snapshotted before any change (`research/audit/media/baseline`, 44 frames); after Phase 1, 9 of 12 are pixel-identical and the other 3 differ only by the grille coming back (finding 1).
+Tests: `npm test`, 26 tests across the clock, signals, arrangements and timing helpers, all passing. Regression: every composition was snapshotted before any change (`research/audit/media/baseline`, 44 frames); after Phase 1, 9 of 12 are pixel-identical and the other 3 differ only by the grille coming back (finding 1).
 
 ## Findings
 
@@ -88,11 +89,16 @@ What each pass actually reads, from the code:
 
 Alpha: every pass fills its source black before painting, so transparency reads as black (`htmlPlate` defaults to a transparent background, which then reads as black under any pass).
 
-Implicit adaptations worth knowing: a colour source into `risoPass` or `ditherCanvas` keeps only red (a blue-heavy source goes dark); a colour source into ramp-mode `screenPass` is luma'd; the riso contract is coverage, not light. **Proposed (small, Phase 2):** this table into `docs/architecture.md`, and switch `ditherCanvas` and `risoPass` from red to luma so colour sources degrade the same way everywhere. That changes no current output (every current source is grayscale), which a regression run can prove. No `SourceKind` type yet: the table is enough until a mismatch actually bites.
+Implicit adaptations found: a colour source into `risoPass` or `ditherCanvas` kept only red (a blue-heavy source went dark); a colour source into ramp-mode `screenPass` is luma'd; the riso contract is coverage, not light. **Done (`110221c`):** the table is in `docs/architecture.md`, and `risoPass` and `ditherCanvas` read Rec. 709 luma. Regression: waves-test and smoke identical; risograph and riso-lab differ by 1-10 pixels per frame, each by 1/255 (float rounding of the weights). No `SourceKind` type: the table is enough until a mismatch actually bites.
 
 ### 9. Mechanics trapped in compositions (open)
 
-Not assessed beyond the brief's list. The honest test is the two cross-composition experiments (pen kit under cyanotype; a sheet camera over a teletext wall), which haven't been run. **Proposed next.** Candidates already known: the scope's mode squash and power-off, teletext's page search. Keep both in place until an experiment needs them.
+Both experiments ran (`compositions/xp-pen-cyanotype`, `compositions/xp-teletext-wall`; frames in `research/audit/media/xp2/`).
+
+- **A, source transfer:** blueprint's pen kit and sheet camera under the cyanotype screen. Worked with no adapter and no library change. Glue: a camera save/apply/restore (3 lines), setting the stroke style, a progress helper. Convincing as a cyanotype drawing up close; at wide zoom the material's blur and grille thin 4-6 px pen lines to threads. **Lesson:** under a softening material, pen line widths should scale with 1/zoom. Not extracted; it's one line in the composition until a second piece needs it.
+- **B, arrangement transfer:** the sheet camera over four teletext pages laid out as a wall, teletext TV material. Worked with no adapter. Glue: a `translate` per page. Convincing: glides between pages replace page cuts. Non-integer zoom resamples the cell grid; the TV material hides it.
+
+What repeats, from a grep of all compositions: `clamp` in 8 compositions (and 8 times inside the library), a `prog(t, at, dur)` helper in 4, eases throughout. **Extracted** as `Kino.clamp`, `progress`, `smooth`, `easeOut`, `easeInOut` (`src/utils/timing.ts`, tested); existing compositions keep their copies. Beat helpers (`b`, `bar`, `beat`) repeat in 6 compositions too, but `bar(n) = b(2 + 4n)` hard-codes one song's downbeat offset, so they stay put until `beatMap` exposes downbeats from the audiomap's `beat_in_bar`. The scope's mode squash and teletext's page search: still one-offs.
 
 ### 10. screenPass cost (measured)
 
@@ -110,7 +116,16 @@ Not assessed beyond the brief's list. The honest test is the two cross-compositi
 
 So 98% of a frame is the shader, and inside it the 24 blur taps × 2 `screenAt` calls (fringe) per pixel, each a texture read plus the grille maths. Bloom is ~7%. Upload, grille, grain and the blur *radius* don't matter. A 27 s piece at 1440p is ~22 min of shader time serially.
 
-**Proposed optimisation:** two passes. Pass 1 evaluates the gridded screen once per pixel (both fringe samples) into an intermediate texture; pass 2 does the 24-tap blur and bloom by reading it. That keeps the treatment order the brief asks for (the grille is blurred by the lens), and turns 48 full evaluations per pixel into 2 plus 36 plain texture reads. Expected fidelity cost: taps read the intermediate with bilinear filtering instead of evaluating exactly, and the fringe shift is taken at the tap rather than the output pixel. Both are sub-pixel at the current blur radii. To be accepted only with a pixel-diff against the current output and a look at the cyanotype frames.
+**Done (`908e574`):** two stages in one program. Stage 0 renders the gridded screen once per pixel (both fringe samples) into a half-float intermediate; stage 1 runs the same blur, bloom, grain and ramp over it. Treatment order is unchanged (the lens still blurs the grille).
+
+| ms/frame | before | after |
+|---|---|---|
+| 1080p | 901 | 407 |
+| 1440p | 1595 | 648 |
+
+Fidelity against single-pass on all six screenPass compositions: mean difference 0.02-0.54 levels of 255, more than 8 levels on at most 0.15% of pixels, blueprint and oscilloscope within 1 level; grille strength 16.7/61.9/21.5 → 13.6/63.2/21.3; the worst region side by side (`research/audit/media/twopass-worst.png`) is indistinguishable. Bloom is now ~16% of the remaining cost and the next target if needed.
+
+The first attempt rendered black: the new intermediate texture was bound before the ramp's LUT upload, which writes to whatever is bound. The benchmark timed the broken version, and only the fidelity diff caught it. `scripts/smoke.sh` would have too (its grille check reads `nan` on a flat frame), which is the argument for running it before benchmarking anything.
 
 ### 11. Toolchain and smoke path (partly fixed)
 
@@ -148,14 +163,16 @@ Done, local commits:
 5. `f9fa40e` shared WebGL setup; synthetic smoke composition and script
 6. `d22efff` screenPass benchmark
 
-Proposed, in order, each independently verifiable:
+7. `110221c` contract table; riso and ditherCanvas read luma
+8. `908e574` two-pass screenPass, 2.2-2.5x
+9. `b8d65c6` experiments A and B; timing helpers extracted
+10. `41249ca` lessons: global vs per-look taste
 
-7. Contract table in `docs/architecture.md`; `risoPass` and `ditherCanvas` read luma, not red (regression must show 0 changed pixels)
-8. Two-pass screenPass (benchmark before/after; pixel diff and visual check on cyanotype frames)
-9. Experiment A: pen kit under cyanotype. Experiment B: sheet camera over a teletext wall. Record glue and reuse.
-10. Extract only what 9 shows is repeated
-11. lessons.md: global vs per-look taste
-12. Needs Berker: teardown native-resolution measuring and PROMOTE stage; teletext grille decision; push
+Still open:
+
+11. Needs Berker: the teletext grille decision (`tt-ab.png`); teardown native-resolution measuring and the PROMOTE stage (write-protected skill folder); pushing these commits
+12. When a second piece needs it: downbeats in `beatMap` (then shared bar helpers); `texture.ditherPass` in the look type; 1/zoom line widths in the pen kit
+13. If more screenPass speed is wanted: bloom (now ~16% of the frame)
 
 ## Left alone on purpose
 

@@ -27,7 +27,7 @@ It mimics a camera filming a screen. The picture is graded, the screen has a gri
 
 - **Ramp.** Luminance goes through a gradient map. `prussianRamp` is 16 steps measured from the reference: every frame of their film sits on one curve from `#060D18` to `#F0F4F4`, with almost no scatter around it.
 - **Grille.** Vertical stripes about 11.5 px apart at 4K (scaled with width), as narrow dark gaps between wide bright stripes, with staggered beads in the bright part. It is a mean-preserving ripple on luminance before the ramp: a grille that only darkens dims the picture by a fifth, and because the ramp is flat at both ends the stripes fade out in deep blacks and white type, which is what the reference measures. The stripes are the same in R, G and B. That's how we know their film is synthetic, not filmed off a CRT.
-- **Lens.** A small blur everywhere (`softness`) and more toward the left and right edges only (`edgeBlur`, `edgeFalloff`). Every blur tap reads the gridded screen, so the grille itself goes soft at the sides.
+- **Lens.** A small blur everywhere (`softness`) and more toward the left and right edges only (`edgeBlur`, `edgeFalloff`). The blur reads the gridded screen, so the grille itself goes soft at the sides. The screen is rendered once per pixel into an intermediate texture and the blur runs over that (two stages in one program); evaluating the screen inside every tap was 98% of the frame time.
 - **Fringe.** Green is read from a picture shifted right of red and blue, so white type gets a magenta left edge and a green right edge. Only the picture shifts, never the grille: shifting the whole screen sample by half a stripe turned the grille green and magenta.
 - **Bloom and grain**, both small.
 - **Lens distortion** (`lensX/Y/R/K` via `tune`) bends the picture inside a circle and lights its rim. Like the fringe, it bends the picture and not the grille. There is also a ripple distortion (`rippleX/Y/Age/Amp`). It's off by default, and Berker didn't like the water-drop transition it was used for, so leave it out unless asked.
@@ -58,6 +58,7 @@ With `curveY` the picture bends off the glass at the edges, and anything outside
 
 ## Known limits
 
-- Rendering is slow: the pass runs in SwiftShader inside headless Chrome. 20 s took 6 minutes for plates and hard cuts, 25 s took 20 minutes with the strip, the tree and the transitions.
+- Rendering runs in SwiftShader inside headless Chrome. Since the two-stage change (2026-10-09) a 1440p frame costs about 0.65 s, down from 1.6 s; `scripts/bench-screen-pass.sh` measures it. Bloom is now the largest single cost (~16%).
+- Until 2026-10-09 the grille was silently off: an inner `float c` in `screenAt` shadowed the colour. `scripts/smoke.sh` now checks that the grille changes the picture.
 - `hyperframes check` on screen-test crashed its browser partway through the sweep ("Target closed"). Snapshots and renders are fine. Not investigated yet.
 - The fine woven speckle in the reference's close-ups is not reproduced; the softness blurs our beads away. It probably wants a texture applied after the blur.

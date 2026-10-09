@@ -29,6 +29,8 @@ examples/            rendered outputs (videos gitignored); examples/styles/index
 ## Working loop
 
 ```
+npm test                      # unit tests: clock, signals, arrangements (node, no browser)
+scripts/smoke.sh              # end to end on a synthetic composition: tests, build, check, snapshot, grille check
 npm run build                 # after any src/ change; compositions only see vendor/
 cd compositions/<name>
 hyperframes check             # lint + runtime + layout + contrast; fix everything
@@ -36,7 +38,7 @@ hyperframes snapshot --at 1,5,9 --output /tmp/...   # segfaults on exit after wr
 hyperframes render --quality delivery --output ../../examples/<name>/<file>.mp4
 ```
 
-Compositions using screenPass need WebGL: run `env -u WAYLAND_DISPLAY hyperframes ...` until the dotfiles wrapper that unsets it is switched in. To learn a look from someone else's video, use the `teardown` skill.
+Compositions using screenPass need WebGL: run `env -u WAYLAND_DISPLAY hyperframes ...` until the dotfiles wrapper that unsets it is switched in. To learn a look from someone else's video, use the `teardown` skill. Before changing a pass, snapshot what it renders now (`research/audit/snap.sh <label> <comps>`) and diff after; `scripts/bench-screen-pass.sh` times screenPass.
 
 `hyperframes` is the Nix-packaged CLI (pinned in ~/dotfiles), wired to a local chrome-headless-shell and FFmpeg. Don't use `npx hyperframes`. Python with librosa is on PATH for audio analysis.
 
