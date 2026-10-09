@@ -50,7 +50,7 @@
         Kino.digicamPass(stage(0), tl, { width: W, height: H, start: 0, duration: 1, fps: FPS, paint: (ctx) => now(ctx, T), ...dc });
         Kino.digicamPass(stage(1), tl, { width: W, height: H, start: 1, duration: 1, fps: FPS, paint: (ctx) => trails(ctx, T), ...dc });
         Kino.digicamPass(stage(2), tl, { width: W, height: H, start: 2, duration: 1, fps: FPS, paint: (ctx) => both(ctx, T), ...dc });
-        Kino.filmPass(stage(3), tl, { width: W, height: H, start: 3, duration: 1, fps: FPS, paint: (ctx) => both(ctx, T) });
+        Kino.filmPass(stage(3), tl, { width: W, height: H, start: 3, duration: 1, fps: FPS, paint: (ctx) => both(ctx, T), toning: ["#0a0b0e", "#f4ede1"], grain: 0.075, halation: 0.55, halationThreshold: 0.7, halationRadius: 26, vignette: 0.3, weave: 0.7 });
         const hx = Kino.shutterIntegrate({ width: W, height: H, source: horses, duration: 0.5, samples: 24, flash: 0.4, flashAt: 0 });
         const raw = (start, painter) => Kino.digicamPass(stage(start), tl, { width: W, height: H, start, duration: 1, fps: FPS, strength: 0, paint: painter });
         raw(4, (ctx) => horses(ctx, 1.9));

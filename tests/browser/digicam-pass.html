@@ -67,7 +67,7 @@ test("noise: bounded, moves per frame, repeats after out-of-order seeks", () => 
   assert(maxDiff(gray(a), gray(b)) > 0, "noise froze");
   assert(maxDiff(pixels(a), pixels(c)) === 0, "t=0.5 not repeatable after other seeks");
   const s = sd(gray(a), 1);
-  assert(s > 0.5 && s < 12, "gray field sd " + s.toFixed(2));
+  assert(s > 0.5 && s < 16, "gray field sd " + s.toFixed(2));
   return `gray field sd ${s.toFixed(2)} levels`;
 });
 test("seed changes noise and fixed pattern only: with both at 0, seeds are identical", () => {

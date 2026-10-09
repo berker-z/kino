@@ -30,6 +30,7 @@ import {el} from "../utils/dom";
 //      lavender highlight tint
 //   9. shadow tint: a luma-preserving hue shift toward blue-violet in a
 //      band above black (black itself stays black)
+//  10. the camera's curve: a steep S and oversaturation in display space
 //
 // A flat RGB frame has no depth or normals, so this can't relight a scene
 // as a flash would. The flash look (subject blown out, room gone) comes
@@ -79,6 +80,10 @@ export type DigicamSettings = {
   falloff: number;
   /** 0-1 colour from 8x8 block averages. */
   blocks: number;
+  /** 0-1 the camera's punchy default tone curve (an S in display space). */
+  contrast: number;
+  /** Colour saturation; cheap cameras shipped above 1. */
+  saturation: number;
 };
 
 export type DigicamPassOptions = Partial<DigicamSettings> & {
@@ -99,21 +104,23 @@ export type DigicamPassOptions = Partial<DigicamSettings> & {
 
 export const digicamDefaults: DigicamSettings = {
   strength: 1,
-  exposure: 0.6,
-  whiteClip: 0.82,
-  blackPoint: 0.006,
-  cold: 0.25,
-  shadowTint: 0.25,
-  highlightTint: 0.5,
-  bleed: 0.35,
-  bleedThreshold: 0.8,
+  exposure: 0.85,
+  whiteClip: 0.74,
+  blackPoint: 0.014,
+  cold: 0.3,
+  shadowTint: 0.3,
+  highlightTint: 0.55,
+  bleed: 0.4,
+  bleedThreshold: 0.78,
   bleedRadius: 10,
-  fringe: 1.6,
-  sharpen: 0.55,
-  noise: 0.028,
-  pattern: 0.018,
-  falloff: 0.35,
-  blocks: 0,
+  fringe: 2.6,
+  sharpen: 1.0,
+  noise: 0.032,
+  pattern: 0.02,
+  falloff: 0.55,
+  blocks: 0.4,
+  contrast: 0.55,
+  saturation: 1.3,
 };
 
 const VERT = `#version 300 es
@@ -127,7 +134,7 @@ in vec2 uv;
 out vec4 color;
 uniform sampler2D src, bloom, blockTex;
 uniform vec2 res;
-uniform float strength, exposure, whiteClip, blackPoint, cold, shadowTint, highlightTint, bleed, fringe, sharpen, noise, pattern, falloff, blocks;
+uniform float strength, exposure, whiteClip, blackPoint, cold, shadowTint, highlightTint, bleed, fringe, sharpen, noise, pattern, falloff, blocks, contrast, saturation;
 uniform vec3 hiColor, loColor;
 uniform uint frame, seed;
 
@@ -225,7 +232,13 @@ void main() {
   float band = smoothstep(0.0, 0.008, ls) * (1.0 - smoothstep(0.015, 0.1, ls));
   x = mix(x, ls * tint, shadowTint * band);
 
-  vec3 outc = toSrgb(clamp(x, 0.0, 1.0));
+  // 10. The camera's own curve and colour, in display space: a steep S and
+  // oversaturation. Black and white are fixed points of the S.
+  vec3 d = toSrgb(clamp(x, 0.0, 1.0));
+  d = mix(d, d * d * (3.0 - 2.0 * d), contrast);
+  float dl = dot(d, LUMA);
+  d = clamp(dl + (d - dl) * saturation, 0.0, 1.0);
+  vec3 outc = d;
   color = vec4(mix(orig, outc, clamp(strength, 0.0, 1.0)), 1.0);
 }`;
 
