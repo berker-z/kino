@@ -86,7 +86,9 @@ float vnoise(vec2 p) {
 
 // Coverage 0-1 of one ink at px: halftone dot sized by density, plus grain.
 float ink(sampler2D src, vec2 px, vec2 off, float angle, float salt) {
-  float d = texture(src, (px - off) / res).r;
+  // Luma, not the red channel: a colour source then degrades the same way it
+  // does in every other pass (all current sources are gray, where it's equal).
+  float d = dot(texture(src, (px - off) / res).rgb, vec3(0.2126, 0.7152, 0.0722));
   if (d < 0.01) return 0.0;
   float a = radians(angle);
   vec2 r = mat2(cos(a), -sin(a), sin(a), cos(a)) * px / cell;

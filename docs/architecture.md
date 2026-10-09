@@ -98,10 +98,21 @@ Because sources paint grayscale and passes decide the medium, most combinations 
 - **The print run, cyanotype.** `printRun` scrolling `sunprint`s through the Trinitron instead of halftone separations.
 - **The sheet camera over a teletext wall.** Many teletext pages laid out on one canvas, the camera gliding between them.
 
-Two seams to know:
+### What each pass reads
 
-- `risoPass` takes **two** pictures. A source has to choose its drum: paint it into one separation, or both for black-ish overprint.
-- Colour sources (teletext) need `screenPass` with `colorMode: true`. In ramp mode the picture is reduced to luminance first.
+"Sources paint grayscale" holds for most pieces, with three exceptions worth knowing: `screenPass` has a colour mode, `risoPass` takes two pictures, and riso's white means ink rather than light.
+
+| pass | input | reads | white means | a colour source |
+|---|---|---|---|---|
+| `screenPass` (ramp) | one canvas | Rec. 709 luma | light | reduced to luma |
+| `screenPass` (`colorMode: true`) | one canvas | RGB | light | kept (teletext needs this) |
+| `risoPass` | **two** canvases, one per drum | luma of each | full ink | reduced to luma |
+| `ditherPass` | one canvas | Rec. 709 luma | light | reduced to luma |
+| `ditherCanvas` | one canvas | luma | the `ink` colour | reduced to luma |
+
+- Every pass fills its source with black before calling `paint`, so transparent areas read as black. `htmlPlate` is transparent by default; give it a `background` if the page should be paper.
+- With `risoPass`, a source chooses its drum: paint it into one separation, or into both for a near-black overprint.
+- Nothing converts between these silently any more: until 2026-10-09 `risoPass` and `ditherCanvas` read only the red channel, so a blue-heavy colour source went dark.
 
 ## Where to read next
 

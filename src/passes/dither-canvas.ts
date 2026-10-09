@@ -95,7 +95,9 @@ export function ditherCanvas(container: HTMLElement, timeline: gsap.core.Timelin
       for (let x = 0; x < w; x++) {
         let sx = x - shift;
         sx = sx < 0 ? 0 : sx >= w ? w - 1 : sx;
-        let lum = src[(y * w + sx) * 4] / 255 + bias;
+        // Rec. 709 luma rather than the red channel, like the other passes.
+        const o = (y * w + sx) * 4;
+        let lum = (0.2126 * src[o] + 0.7152 * src[o + 1] + 0.0722 * src[o + 2]) / 255 + bias;
         if (noise > 0) lum += (hash(x, y, frame) - 0.5) * 2 * noise;
         const i = (y * w + x) * 4;
         if (mode === "smooth") {
