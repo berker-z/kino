@@ -27,6 +27,8 @@ The showcase page with all four styles is `examples/styles/index.html` (videos n
 
 Built from `KINO_NEXT_VISUAL_LANGUAGES.md`: `compositions/xp-darkroom` (THE SILENT CITY), `xp-typesetting` (THE NAME OF THE THING), `xp-temporal-scan` (AN OBJECT OUTSIDE TIME), each with an `ab/ab.html` cross-material version. New library pieces: `doubleExposure`, `filmPass`, `temporalScan`, `lineRise`, `fragmentGrid`/`drawFragments`, and `data-lines` in `htmlPlate`. Results, critique and verdict: `examples/languages/index.html`. Canvas code is now tested in a browser: `npm run test:browser`. Waiting on Berker's verdict before any `darkroom` look or more promotion.
 
+Later the same day: the type reveal became construction order (loved), a footage slit-scan demo (`xp-temporal-footage`), and a second darkroom piece without a figure (`xp-darkroom-elevations`, self-mattes; take one with side-by-side panels read as a layout). Then the working method changed: **`docs/arsenal.md` is the living list of moves, and the `direct` skill turns Berker's ideas into combinations from it.** Keep the arsenal updated in the same change as any new primitive, composition or verdict (rule in CLAUDE.md, AGENTS.md links to it).
+
 Photo note: Berker doesn't want the Kutia Kondh portrait (`portrait.jpg` in dither-lab/research) used again.
 
 ## Machine notes

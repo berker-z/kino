@@ -31,3 +31,14 @@ At 2560×1440 the scratch canvases are about 44 MB. Nothing depends on the previ
 ## Tests
 
 `tests/browser/double-exposure.html`: alpha vs luma, colour ignored in alpha mode, holes, 50% gray as half coverage, the white-on-black trap, mix 0 and 1 exactly, the screen formula, repeat seeks.
+
+## Self-mattes
+
+`plateKeys(plate)` (`arrange/self-matte.ts`) cuts mattes out of a plate's own picture, for exposing a second image through its sky or its shadows instead of through a cut-out shape. It returns two plate-sized canvases, drawn at the plate's position so they move with it:
+
+- `sky`: an alpha mask of the pixels past a luma threshold (dark or light sky, auto-detected from the top row) that are connected to the top edge, so a black window in a facade isn't sky.
+- `darkness`: inverted luma with the sky removed, as a luma mask. Draw it with `ctx.filter = thresholdWindow(lo, width)` and the shadows open by a rule as `lo` falls: the darkest areas admit light first.
+
+Both are read at quarter size and scaled back up blurred (3 px and 7 px). The blur is the point for the darkness map: unblurred, concrete texture passed as shadow and the second image came through in blotches.
+
+`xp-darkroom-elevations` uses both: fog through the tower's black sky, a spiral stair through its shadows. Its first take used rectangular mattes side by side and read as a layout; mattes cut from the picture itself read as one photograph.

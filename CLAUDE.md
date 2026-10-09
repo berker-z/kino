@@ -2,6 +2,12 @@
 
 A motion design library for HyperFrames: aesthetics, motion primitives, effects, painters and scenes that compositions assemble into videos. `MOTION_SYSTEM_KICKSTART.md` is the original brief. `docs/lessons.md` is what we learned since; read it before writing a primitive or a composition.
 
+## Arsenal (living document)
+
+`docs/arsenal.md` lists every technique as a move: what it does, how it feels, what it needs, what it pairs with, what to avoid, where it's been seen, and Berker's verdicts. When Berker brings an idea, use the `direct` skill: read the arsenal, read the idea for vibe, and propose two or three combinations before building anything.
+
+Keep it true. In the same change that adds or changes a primitive, proves a new combination in a composition, or records a verdict from Berker, update the matching arsenal entry (add one if it's new, mark rejected things as rejected). `examples/arsenal/index.html` renders straight from the markdown, so there's nothing else to sync.
+
 ## Layout
 
 `docs/architecture.md` explains the pipeline and how to mix pieces. In short: signals read the song, sources paint grayscale, arrange moves things in time, a pass turns the picture into a medium, a look bundles pass settings with palette and motion rules.

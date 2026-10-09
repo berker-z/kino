@@ -55,6 +55,7 @@ Footage is dithered offline by `scripts/dither.py` (same settings as `ditherPass
 | `tornWipe` | the next scene through a torn print |
 | `lensPass` + `lensPassFx` | the next scene opening inside a glass circle |
 | `doubleExposure` | one scene exposed inside another's silhouette, through an alpha or luma mask |
+| `plateKeys`, `thresholdWindow` | self-mattes: a plate's own sky and shadows as mattes, shadows opening darkest first |
 | `letterStrokes`, `drawStroke` | a set word taken apart into stems, bars and curves, drafted in that order |
 | `fragmentGrid`, `drawFragments` | a set word assembling from slabs of its own letterforms (superseded by strokes in the typesetting piece) |
 | `lineRise` | measured lines rising into place behind their own boxes |
@@ -136,6 +137,7 @@ Because sources paint grayscale and passes decide the medium, most combinations 
 
 ## Where to read next
 
+- `docs/arsenal.md`: every technique as a move, with how it feels and what pairs with it. Read it before proposing a piece (the `direct` skill).
 - `docs/lessons.md`: what we learned the hard way, including Berker's taste verdicts.
 - `docs/primitives/`: one page per primitive with the reasons behind its defaults (`spectrum-feed`, `screen-pass`, `riso-pass`, `double-exposure`, `film-pass`, `type-reveal`, `temporal-scan`, ...).
 - `.claude/skills/teardown/`: how to learn a look from someone else's video.
