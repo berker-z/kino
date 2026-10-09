@@ -24,7 +24,11 @@ def score(img, pitch):
     near = np.r_[spec[k - 12:k - 3], spec[k + 4:k + 13]]
     return peak / np.median(near)
 
-args = [a for a in sys.argv[1:] if not a.startswith("--")]
-pitch = float(sys.argv[sys.argv.index("--pitch") + 1]) if "--pitch" in sys.argv else 11.5 * 2560 / 3840
-for p in args:
+argv = sys.argv[1:]
+pitch = 11.5 * 2560 / 3840
+if "--pitch" in argv:
+    i = argv.index("--pitch")
+    pitch = float(argv[i + 1])
+    del argv[i:i + 2]
+for p in argv:
     print(f"{score(load(p), pitch):8.1f}  {p}")

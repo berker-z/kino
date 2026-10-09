@@ -1,3 +1,4 @@
+import {webgl2, fullscreenProgram, linearTexture} from "./gl";
 import {timeDriver} from "../runtime/time-driver";
 import {el} from "../utils/dom";
 
@@ -137,7 +138,7 @@ export function risoPass(container: HTMLElement, timeline: gsap.core.Timeline, o
   out.dataset.layoutAllowOverflow = "";
   out.width = w;
   out.height = h;
-  const gl = out.getContext("webgl2", {preserveDrawingBuffer: true, antialias: false})!;
+  const gl = webgl2(out, "risoPass");
 
   const layer = () => {
     const c = document.createElement("canvas");
@@ -148,39 +149,10 @@ export function risoPass(container: HTMLElement, timeline: gsap.core.Timeline, o
   const [canvasA, ctxA] = layer();
   const [canvasB, ctxB] = layer();
 
-  const compile = (type: number, src: string) => {
-    const s = gl.createShader(type)!;
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? "shader");
-    return s;
-  };
-  const prog = gl.createProgram()!;
-  gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
-  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
-  gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) ?? "link");
-  gl.useProgram(prog);
+  const prog = fullscreenProgram(gl, "risoPass", VERT, FRAG);
 
-  const buf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-  const loc = gl.getAttribLocation(prog, "p");
-  gl.enableVertexAttribArray(loc);
-  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-
-  const texture = (unit: number) => {
-    const t = gl.createTexture()!;
-    gl.activeTexture(gl.TEXTURE0 + unit);
-    gl.bindTexture(gl.TEXTURE_2D, t);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    return t;
-  };
-  const texA = texture(0);
-  const texB = texture(1);
+  const texA = linearTexture(gl, 0);
+  const texB = linearTexture(gl, 1);
 
   const u = (name: string) => gl.getUniformLocation(prog, name);
   gl.uniform1i(u("srcA"), 0);
