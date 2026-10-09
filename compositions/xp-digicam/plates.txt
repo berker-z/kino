@@ -1,0 +1,4 @@
+# file          width  Commons title (python3 scripts/commons.py fetch compositions/xp-digicam)
+stairwell.jpg   2600   File:Bregenz-Cluttered interiors (compulsive hoarding)-stairwell-01ASD.jpg
+chair.jpg       0      File:White Monobloc chair.jpg
+livingroom.jpg  2560   File:Living room in apartment of Condomínio do Edifício Zaher, Le Blond, Rio de Janeiro, Brazil.jpg

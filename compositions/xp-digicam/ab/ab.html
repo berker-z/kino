@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="../vendor/fonts.css" />
+    <script src="../vendor/gsap.min.js"></script>
+    <script src="../vendor/kino.js"></script>
+    <script src="../scene.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; position: relative; }
+      #root > div { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="12" data-width="2560" data-height="1440" data-fps="24"></div>
+    <script>
+      // Mechanical A/B for digicamPass. Four inputs, each held for 3 s as
+      // raw / digicamPass / filmPass (1 s each), every pass at its defaults:
+      //   0-3   the stairwell scene at t = 6 (authored flash)
+      //   3-6   a bright ordinary living room (no flash in the picture)
+      //   6-9   a cat close-up in daylight
+      //   9-12  procedural RGB geometry (lit spheres and colour blocks)
+      // Snapshot at the half seconds for stills:
+      //   hyperframes snapshot -c ab/ab.html --at 0.5,1.5,...,11.5
+      const W = 2560, H = 1440, FPS = 24;
+      const root = document.getElementById("root");
+      const load = (f) => { const i = new Image(); i.src = "../assets/" + f; return i.decode().then(() => i); };
+      const cover = (img) => (ctx) => {
+        const s = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+        ctx.drawImage(img, (W - img.naturalWidth * s) / 2, (H - img.naturalHeight * s) / 2, img.naturalWidth * s, img.naturalHeight * s);
+      };
+      function geometry(ctx) {
+        ctx.fillStyle = "#14161c"; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = "#3a3d46"; ctx.fillRect(0, 980, W, 460);
+        const balls = [[520, 760, 300, "#e8e4dc"], [1180, 820, 240, "#c42a2a"], [1720, 780, 260, "#2c6fd0"], [2200, 860, 180, "#2fa04a"]];
+        for (const [x, y, r, c] of balls) {
+          const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.05, x, y, r);
+          g.addColorStop(0, "#ffffff"); g.addColorStop(0.18, c); g.addColorStop(1, "#000000");
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        }
+        ["#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff", "#ffffff", "#808080"].forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(240 + i * 260, 180, 220, 160); });
+      }
+      Promise.all([stairwellScene(), load("livingroom.jpg"), load("cat.jpg")]).then(([stair, room, cat]) => {
+        const tl = gsap.timeline({ paused: true });
+        const inputs = [(ctx) => stair(ctx, 6), cover(room), cover(cat), geometry];
+        inputs.forEach((paint, i) => {
+          ["raw", "digicam", "film"].forEach((kind, j) => {
+            const start = i * 3 + j;
+            const stage = document.createElement("div");
+            stage.className = "clip";
+            Object.assign(stage.dataset, { start, duration: 1, trackIndex: start });
+            root.appendChild(stage);
+            const opts = { width: W, height: H, start, duration: 1, fps: FPS, paint: (ctx) => paint(ctx) };
+            if (kind === "raw") opts.strength = 0;
+            if (kind === "film") Kino.filmPass(stage, tl, opts);
+            else Kino.digicamPass(stage, tl, opts);
+          });
+        });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>
