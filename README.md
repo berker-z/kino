@@ -1,5 +1,6 @@
 # kino
 
+Note: Kino is HEAVILY vibecoded and is currently in pre-early-early-early alpha. 
 Kino is a modular motion-design toolkit for [HyperFrames](https://github.com/heygen-com/hyperframes). It collects reusable drawing primitives, procedural animation, rendering passes, and visual styles for making code-driven video. Instead of building every composition from scratch, you can combine different sources, ways of moving through a scene, and materials that determine how the finished image looks.
 
 The core idea is separation: a source draws the image, an arrangement controls its movement, and a pass gives it a material character, from cyanotype and risograph to phosphor and ordered dithering. These parts are designed to mix. Kino also has audio-analysis signals for making visuals respond to beats, energy, and waveforms, but the toolkit isn't limited to music-driven work.
