@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="../vendor/fonts.css" />
+    <script src="../vendor/gsap.min.js"></script>
+    <script src="../vendor/kino.js"></script>
+    <script src="../scene.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; position: relative; }
+      #root > div { position: absolute; inset: 0; }
+      canvas { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="11" data-width="2560" data-height="1440" data-fps="24"></div>
+    <script>
+      // Mechanical A/B for copyGenerations, 1 s each, identical crops:
+      //   0-3   the TESTAMENT page (diagram, box, fine print): original, copy 1, 3, 6
+      //   4-6   an architectural photograph: original, copy 3, copy 6
+      //   7-10  one neutral photograph: raw, xerox copy 3, ditherPass (Bayer 8,
+      //         paper-3), risoPass (both drums, defaults)
+      const W = 2560, H = 1440, FPS = 24;
+      const root = document.getElementById("root");
+      const stage = (start) => { const d = document.createElement("div"); d.className = "clip"; Object.assign(d.dataset, { start, duration: 1, trackIndex: start }); root.appendChild(d); return d; };
+      const load = (f) => { const i = new Image(); i.src = "../assets/" + f; return i.decode().then(() => i); };
+      const coverCanvas = (img, filter = "grayscale(1)") => {
+        const c = document.createElement("canvas"); c.width = W; c.height = H;
+        const g = c.getContext("2d"); g.filter = filter;
+        const s = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+        g.drawImage(img, (W - img.naturalWidth * s) / 2, (H - img.naturalHeight * s) / 2, img.naturalWidth * s, img.naturalHeight * s);
+        return c;
+      };
+      Promise.all([testamentScene({ generations: 6 }), load("tower.jpg"), load("dish.jpg")]).then(([page, tower, dish]) => {
+        const tl = gsap.timeline({ paused: true });
+        const still = (start, draw) => {
+          const c = document.createElement("canvas"); c.width = W; c.height = H; stage(start).appendChild(c);
+          const g = c.getContext("2d");
+          Kino.timeDriver(tl, { start, duration: 1, fps: FPS }, () => { g.fillStyle = "#1a1a1a"; g.fillRect(0, 0, W, H); draw(g); });
+        };
+        [0, 1, 3, 6].forEach((n, i) => still(i, (g) => g.drawImage(page.copies[n], 80, -1560)));
+        const towerCopies = Kino.copyGenerations(coverCanvas(tower), { generations: 6, seed: 5 });
+        [0, 3, 6].forEach((n, i) => still(4 + i, (g) => g.drawImage(towerCopies[n], 0, 0)));
+        const dishRaw = coverCanvas(dish, "grayscale(1) contrast(1.1)");
+        const dishCopy = Kino.copyGenerations(dishRaw, { generations: 3, seed: 9 })[3];
+        still(7, (g) => g.drawImage(dishRaw, 0, 0));
+        still(8, (g) => g.drawImage(dishCopy, 0, 0));
+        Kino.ditherPass(stage(9), tl, { width: W, height: H, start: 9, duration: 1, fps: FPS, scale: 2, method: "bayer-8", palette: "paper-3", prep: "levels", paint: (ctx) => ctx.drawImage(dishRaw, 0, 0) });
+        Kino.risoPass(stage(10), tl, { width: W, height: H, start: 10, duration: 1, fps: FPS, ...Kino.riso.texture.riso, paint: (a, b) => {
+          for (const [ctx, k] of [[a, 0.55], [b, 1]]) { ctx.save(); ctx.filter = "invert(1)"; ctx.globalAlpha = k; ctx.drawImage(dishRaw, 0, 0); ctx.restore(); }
+        } });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

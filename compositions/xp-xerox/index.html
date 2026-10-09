@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <script src="scene.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+      canvas { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="12" data-width="2560" data-height="1440" data-fps="24">
+      <div id="stage" class="clip" data-start="0" data-duration="12" data-track-index="0"></div>
+    </div>
+    <script>
+      // THE TESTAMENT (xerox, phase 3). The page and its copies are made once
+      // by scene.js (Kino.copyGenerations); the film is a camera over them
+      // and the copier's light bar. No pass: the copies are the material.
+      const W = 2560, H = 1440, DURATION = 12, FPS = 24;
+      testamentScene().then((scene) => {
+        const paint = testamentPainter(scene);
+        const tl = gsap.timeline({ paused: true });
+        const c = document.createElement("canvas");
+        c.width = W; c.height = H;
+        document.getElementById("stage").appendChild(c);
+        const g = c.getContext("2d");
+        Kino.timeDriver(tl, { duration: DURATION, fps: FPS }, (t) => paint(g, t));
+        window.__timelines["main"] = tl;
+      }).catch((e) => console.error("scene failed:", e && e.stack || e));
+    </script>
+  </body>
+</html>
