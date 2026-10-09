@@ -56,16 +56,29 @@ So for line art: draw antialiased (`ditherCanvas` `mode: "smooth"`), keep spacin
 
 ## Taste (Berker's verdicts so far)
 
+Split in two on purpose. The global rules have held across every look so far. The per-look notes are what worked for one material and its pace; a deliberately harsh or frantic new look shouldn't inherit them by accident.
+
+### Global
+
 - No full-frame flashes or strobing inversions. Hits should move the picture, not blink it.
 - "Move the picture" means a smooth motion, never an instant jump. A per-beat position kick that decays (even 9 px) reads as jerky left-right jitter.
-- Don't dither text. The world can be dithered; type stays crisp on top.
+- No random static or speckle in empty space. (This is also why error-diffusion dither is stills-only: it boils.)
+- Text stays readable. The world can be dithered, printed or damaged; type sits crisp on top.
 - No stock retro tropes: no sliced sunset sun, no hexagon tunnel, no hacker HUD for its own sake.
-- Don't default to acid lime. Pick palettes per piece. `iceOnNavy` (`#BFD4FF` on `#0A1022`) is the favorite so far.
-- No random static or speckle in empty space.
+- Pick palettes per piece; don't default to acid lime.
 - Fewer ideas done properly beat many effects. Every scene should be about something.
-- Calm motion reads better than busy motion. When something feels jittery, slow it down and remove detail before adding anything.
-- Something has to move in every shot. Hard cuts between still full-bleed images read as "no motion, no effects, no layouts", even with a great treatment. Constant-speed pushes, sliding strips, growing graphs, layouts with more than one thing in them.
-- Transitions should feel physical: a sheet sliding in, a torn print, a glass lens. The water-drop ripple was the one he didn't like.
+- Something has to move in every shot. Hard cuts between still full-bleed images read as "no motion, no effects, no layouts", even with a great treatment.
+- A sequence of designed pages with a transition between them reads as a slideshow, however good the pages are. The pieces that worked had continuous motion built into the concept.
+- Transitions need an intelligible mechanism: a sheet sliding in, a torn print, a glass lens. The water-drop ripple was the one he didn't like.
 - Whole words and lines, wiped in on beats. Not one letter per beat.
-- A sequence of designed pages with a transition between them reads as a slideshow, however good the pages are (the risograph zine). The ones that worked had continuous motion built into the concept: one sheet and a roaming camera, a beam that never stops drawing, a TV that loads pages.
 - To prove a look, run it on new material in a short piece with music. Matching the reference's own frames convinces nobody.
+
+### Per look
+
+- **Cyanotype:** calm pushes, constant-speed strips, physical transitions. `iceOnNavy` (`#BFD4FF` on `#0A1022`) is the favourite palette so far (from the waves piece).
+- **Blueprint:** one sheet and a roaming camera, no cuts; everything drawn in drafting order.
+- **Phosphor:** the picture is the signal; modes squash to a line and reopen.
+- **Teletext:** pages search and paint row by row; steps, not scrolls.
+- **Riso:** one print run; inks drift off register across a bar and land on the downbeat. Smooth drift only.
+- **Dither:** Bayer 8 first, blue noise second; three tones beat two; the fake line engraving was a dead end.
+- **Signal dither (the first waves video):** calm beats busy; when it felt jittery, slowing down and removing detail fixed it.
