@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dither Playground</title>
+<!-- Run with `npm run playground` (serves the repo so local images can be read). -->
+<link rel="stylesheet" href="../../compositions/dither-lab/vendor/fonts.css">
+<script src="../../dist/kino.js"></script>
+<style>
+  :root { --bg: #0E0C0A; --panel: #171411; --line: #2C2620; --text: #E2D8C8; --muted: #978A77; --accent: #C9A87A; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.45 "IBM Plex Mono", ui-monospace, monospace; }
+  .app { display: grid; grid-template-columns: 320px 1fr; height: 100%; }
+  @media (max-width: 860px) { .app { grid-template-columns: 1fr; height: auto; } }
+  aside { background: var(--panel); border-right: 1px solid var(--line); padding: 18px 16px 30px; overflow-y: auto; }
+  h1 { font: 800 22px "Inter Tight", system-ui, sans-serif; margin: 0 0 4px; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0 0 18px; font-size: 12px; }
+  fieldset { border: 0; border-top: 1px solid var(--line); margin: 0; padding: 14px 0 6px; }
+  legend { color: var(--accent); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; padding: 0 0 6px; }
+  label { display: block; margin: 0 0 10px; }
+  .row { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+  .row b { color: var(--text); font-weight: 500; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=range].big { height: 26px; }
+  select, button, input[type=file] { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 3px; padding: 6px 8px; font: inherit; }
+  button { cursor: pointer; margin-top: 6px; }
+  button:hover { border-color: var(--accent); }
+  .swatches { display: flex; gap: 6px; margin: 6px 0 0; }
+  .swatches input { width: 36px; height: 28px; padding: 0; border: 1px solid var(--line); background: none; }
+  .check { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 12px; }
+  main { position: relative; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  main.drag { outline: 2px dashed var(--accent); outline-offset: -10px; }
+  /* Fit mode shrinks smoothly: shrinking hard pixels makes a plaid moire that
+     isn't in the picture. 1:1 shows the real pixels. */
+  canvas#view { max-width: 100%; max-height: calc(100vh - 32px); image-rendering: auto; background: #000; cursor: zoom-in; }
+  main.actual canvas#view { max-width: none; max-height: none; image-rendering: pixelated; cursor: zoom-out; }
+  .hint { position: absolute; left: 16px; bottom: 12px; color: var(--muted); font-size: 12px; pointer-events: none; }
+  pre { white-space: pre-wrap; word-break: break-all; background: var(--bg); border: 1px solid var(--line); padding: 8px; font-size: 11px; color: var(--muted); margin: 6px 0 0; }
+  .stat { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Dither playground</h1>
+    <p class="sub">kino's ditherPass, live. Drop an image or a video anywhere on the right.</p>
+
+    <fieldset>
+      <legend>Amount</legend>
+      <label><div class="row"><span>how much it dithers</span><b id="amountV"></b></div>
+        <input type="range" id="amount" class="big" min="0" max="1" step="0.01" value="1"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Source</legend>
+      <label><select id="sample"></select></label>
+      <label><input type="file" id="file" accept="image/*,video/*"></label>
+      <label class="check"><input type="checkbox" id="playing" checked> play video</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Pattern</legend>
+      <label><select id="method">
+        <option value="bayer-8">Bayer 8</option>
+        <option value="blue-noise">Blue noise</option>
+        <option value="bayer-4">Bayer 4</option>
+        <option value="halftone">Halftone</option>
+      </select></label>
+      <label><div class="row"><span>pixel size</span><b id="scaleV"></b></div>
+        <input type="range" id="scale" min="1" max="6" step="1" value="2"></label>
+      <label><div class="row"><span>output</span></div><select id="size">
+        <option value="2560x1440">2560 × 1440</option>
+        <option value="1920x1080">1920 × 1080</option>
+        <option value="1080x1350">1080 × 1350</option>
+        <option value="1080x1920">1080 × 1920</option>
+      </select></label>
+      <div id="haltCtl" hidden>
+        <label><div class="row"><span>dot cell</span><b id="cellV"></b></div><input type="range" id="cell" min="3" max="16" step="1" value="5"></label>
+        <label><div class="row"><span>screen angle</span><b id="angleV"></b></div><input type="range" id="angle" min="0" max="90" step="1" value="45"></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Palette</legend>
+      <label><select id="palette"></select></label>
+      <div class="swatches" id="swatches"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Prep</legend>
+      <label><div class="row"><span>local contrast</span><b id="localV"></b></div><input type="range" id="local" min="0" max="1.5" step="0.05" value="0.6"></label>
+      <label><div class="row"><span>S-curve</span><b id="contrastV"></b></div><input type="range" id="contrast" min="0" max="1" step="0.05" value="0.35"></label>
+      <label><div class="row"><span>sharpen</span><b id="sharpenV"></b></div><input type="range" id="sharpen" min="0" max="2" step="0.05" value="0.7"></label>
+      <label><div class="row"><span>gamma</span><b id="gammaV"></b></div><input type="range" id="gamma" min="0.4" max="2.2" step="0.05" value="1"></label>
+      <label><div class="row"><span>brightness</span><b id="biasV"></b></div><input type="range" id="bias" min="-0.5" max="0.5" step="0.01" value="0"></label>
+      <label class="check"><input type="checkbox" id="levels" checked> auto levels</label>
+      <button id="remeasure">re-measure levels</button>
+      <button id="reset">reset prep to punch</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Use it</legend>
+      <div class="stat" id="stat"></div>
+      <button id="copyJs">copy ditherPass options</button>
+      <button id="copyCli">copy scripts/dither.py command</button>
+      <button id="save">save PNG</button>
+      <pre id="code"></pre>
+    </fieldset>
+  </aside>
+  <main id="main">
+    <canvas id="view"></canvas>
+    <div class="hint">hold space: original · click picture: 1:1 / fit</div>
+  </main>
+</div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const SAMPLES = [
+    ["portrait", "../../compositions/dither-lab/assets/plates/portrait.jpg"],
+    ["night street", "../../compositions/dither-lab/assets/plates/night.jpg"],
+    ["cat", "../../compositions/dither-lab/assets/plates/cat.jpg"],
+    ["concert", "../../compositions/dither-lab/assets/plates/concert.jpg"],
+    ["statue", "../../compositions/dither-lab/assets/plates/statue.jpg"],
+    ["mountain", "../../research/dither/media/src/misc/mountain.jpg"],
+    ["car", "../../research/dither/media/src/misc/car.jpg"],
+    ["food", "../../research/dither/media/src/misc/food.jpg"],
+    ["flower", "../../research/dither/media/src/misc/flower.jpg"],
+    ["spacewalk", "../../research/dither/media/src/misc/astronaut.jpg"],
+    ["Doré, Paradise Lost", "../../research/dither/media/src/dore-2.jpg"],
+    ["video: train", "../../research/dither/media/footage/train.mp4"],
+    ["video: horses", "../../research/dither/media/footage/horses.mp4"],
+    ["video: astronaut", "../../research/dither/media/footage/astronaut.mp4"],
+    ["video: waves", "../../research/dither/media/footage/waves.mp4"],
+  ];
+  for (const [name, src] of SAMPLES) $("sample").append(new Option(name, src));
+  for (const name of Object.keys(Kino.ditherPalettes)) $("palette").append(new Option(name, name));
+  $("palette").append(new Option("custom", "custom"));
+  $("palette").value = "sepia-3";
+
+  const view = $("view");
+  const vctx = view.getContext("2d");
+  const source = document.createElement("canvas");
+  const sctx = source.getContext("2d");
+  let W = 2560, H = 1440, scale = 2, d = null;
+  let media = null, isVideo = false, showOriginal = false, dirty = true;
+  let custom = [...Kino.ditherPalettes["sepia-3"]];
+
+  function paletteColors() {
+    return $("palette").value === "custom" ? custom : [...Kino.ditherPalettes[$("palette").value]];
+  }
+  function prep() {
+    return {
+      levels: $("levels").checked ? "auto" : undefined,
+      localContrast: +$("local").value, localRadius: 24,
+      contrast: +$("contrast").value, sharpen: +$("sharpen").value, gamma: +$("gamma").value,
+    };
+  }
+  function settings() {
+    return { method: $("method").value, palette: paletteColors(), prep: prep(), amount: +$("amount").value, cell: +$("cell").value, angle: +$("angle").value };
+  }
+
+  function drawSource() {
+    // Cover-fit the media into the output frame.
+    sctx.fillStyle = "#000";
+    sctx.fillRect(0, 0, W, H);
+    if (!media) return;
+    const mw = isVideo ? media.videoWidth : media.naturalWidth;
+    const mh = isVideo ? media.videoHeight : media.naturalHeight;
+    if (!mw || !mh) return;
+    const s = Math.max(W / mw, H / mh);
+    sctx.drawImage(media, (W - mw * s) / 2, (H - mh * s) / 2, mw * s, mh * s);
+  }
+
+  function rebuild() {
+    [W, H] = $("size").value.split("x").map(Number);
+    scale = +$("scale").value;
+    source.width = view.width = W;
+    source.height = view.height = H;
+    d = Kino.ditherer(Math.ceil(W / scale), Math.ceil(H / scale), settings());
+    remeasure();
+  }
+  function remeasure() {
+    if (!d) return;
+    d.configure(settings());
+    if ($("levels").checked && media) { drawSource(); d.measure(source); }
+    dirty = true;
+  }
+
+  function frame() {
+    if (isVideo && media && !media.paused) dirty = true;
+    if (dirty && d) {
+      dirty = false;
+      drawSource();
+      vctx.imageSmoothingEnabled = false;
+      if (showOriginal) {
+        vctx.drawImage(source, 0, 0);
+      } else {
+        const t0 = performance.now();
+        const c = d.render(source, { bias: +$("bias").value });
+        vctx.drawImage(c, 0, 0, d.width * scale, d.height * scale);
+        $("stat").textContent = `${d.width}×${d.height} dither px · ${Kino.ditherSteps(paletteColors().length, +$("amount").value) + 1} tones · ${(performance.now() - t0).toFixed(0)} ms/frame`;
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function load(src, video) {
+    if (media && isVideo) media.pause();
+    isVideo = video;
+    if (video) {
+      const v = document.createElement("video");
+      v.src = src; v.muted = true; v.loop = true; v.playsInline = true;
+      v.addEventListener("loadeddata", () => { media = v; remeasure(); if ($("playing").checked) v.play(); }, { once: true });
+    } else {
+      const img = new Image();
+      img.onload = () => { media = img; remeasure(); };
+      img.src = src;
+    }
+  }
+  const isVideoSrc = (s) => /\.(mp4|webm|mov|ogv|mkv)$/i.test(s);
+
+  // Wire up controls.
+  const show = () => {
+    $("amountV").textContent = (+$("amount").value).toFixed(2);
+    $("scaleV").textContent = `${$("scale").value}×`;
+    $("cellV").textContent = $("cell").value;
+    $("angleV").textContent = `${$("angle").value}°`;
+    for (const id of ["local", "contrast", "sharpen", "gamma", "bias"]) $(id + "V").textContent = (+$(id).value).toFixed(2);
+    $("haltCtl").hidden = $("method").value !== "halftone";
+    renderSwatches();
+    $("code").textContent = jsSnippet();
+  };
+  function renderSwatches() {
+    const box = $("swatches");
+    const cols = paletteColors();
+    box.innerHTML = "";
+    cols.forEach((c, i) => {
+      const inp = document.createElement("input");
+      inp.type = "color"; inp.value = c.toLowerCase();
+      inp.addEventListener("input", () => {
+        custom = [...paletteColors()]; custom[i] = inp.value;
+        $("palette").value = "custom";
+        d.configure({ palette: custom }); dirty = true; $("code").textContent = jsSnippet();
+      });
+      box.append(inp);
+    });
+    if ($("palette").value === "custom") {
+      const add = document.createElement("button"); add.textContent = cols.length < 4 ? "+" : "−";
+      add.style.width = "36px"; add.style.marginTop = "0";
+      add.onclick = () => { custom = cols.length < 4 ? [...cols, "#ffffff"] : cols.slice(0, 2); d.configure({ palette: custom }); dirty = true; show(); };
+      box.append(add);
+    }
+  }
+  for (const id of ["amount", "method", "palette", "local", "contrast", "sharpen", "gamma", "cell", "angle", "bias"]) {
+    $(id).addEventListener("input", () => { d.configure(settings()); dirty = true; show(); });
+  }
+  $("levels").addEventListener("change", () => { remeasure(); show(); });
+  $("scale").addEventListener("input", () => { rebuild(); show(); });
+  $("size").addEventListener("change", () => { rebuild(); show(); });
+  $("sample").addEventListener("change", () => load($("sample").value, isVideoSrc($("sample").value)));
+  $("file").addEventListener("change", (e) => { const f = e.target.files[0]; if (f) load(URL.createObjectURL(f), f.type.startsWith("video")); });
+  $("playing").addEventListener("change", () => { if (isVideo && media) $("playing").checked ? media.play() : media.pause(); dirty = true; });
+  $("remeasure").addEventListener("click", remeasure);
+  $("reset").addEventListener("click", () => {
+    Object.entries({ local: 0.6, contrast: 0.35, sharpen: 0.7, gamma: 1, bias: 0 }).forEach(([k, v]) => ($(k).value = v));
+    $("levels").checked = true; remeasure(); show();
+  });
+  $("main").addEventListener("dragover", (e) => { e.preventDefault(); $("main").classList.add("drag"); });
+  $("main").addEventListener("dragleave", () => $("main").classList.remove("drag"));
+  $("main").addEventListener("drop", (e) => {
+    e.preventDefault(); $("main").classList.remove("drag");
+    const f = e.dataTransfer.files[0]; if (f) load(URL.createObjectURL(f), f.type.startsWith("video"));
+  });
+  view.addEventListener("click", () => $("main").classList.toggle("actual"));
+  addEventListener("keydown", (e) => { if (e.code === "Space" && e.target === document.body) { e.preventDefault(); showOriginal = true; dirty = true; } });
+  addEventListener("keyup", (e) => { if (e.code === "Space") { showOriginal = false; dirty = true; } });
+
+  function prepSnippet() {
+    const p = prep();
+    return `{ levels: ${p.levels ? '"auto"' : "[0, 1]"}, localContrast: ${p.localContrast}, contrast: ${p.contrast}, sharpen: ${p.sharpen}${p.gamma !== 1 ? `, gamma: ${p.gamma}` : ""} }`;
+  }
+  function jsSnippet() {
+    const pal = $("palette").value === "custom" ? JSON.stringify(custom) : `"${$("palette").value}"`;
+    const s = settings();
+    return `Kino.ditherPass(stage, tl, {\n  width: ${W}, height: ${H}, scale: ${scale}, duration, fps: 30,\n  method: "${s.method}", palette: ${pal}, amount: ${s.amount},${s.method === "halftone" ? ` cell: ${s.cell}, angle: ${s.angle},` : ""}\n  prep: ${prepSnippet()},\n  paint,\n});`;
+  }
+  function cliSnippet() {
+    const pal = $("palette").value === "custom" ? `"${custom.join(",")}"` : $("palette").value;
+    const def = +$("local").value === 0.6 && +$("contrast").value === 0.35 && +$("sharpen").value === 0.7 && +$("gamma").value === 1 && $("levels").checked;
+    return `python3 scripts/dither.py IN -o OUT --size ${W}x${H} --scale ${scale} --method ${$("method").value} --palette ${pal} --amount ${$("amount").value}${def ? "" : "  # prep sliders differ from punch: the script uses punch"}`;
+  }
+  $("copyJs").addEventListener("click", () => navigator.clipboard.writeText(jsSnippet()));
+  $("copyCli").addEventListener("click", () => navigator.clipboard.writeText(cliSnippet()));
+  $("save").addEventListener("click", () => { const a = document.createElement("a"); a.href = view.toDataURL("image/png"); a.download = "dither.png"; a.click(); });
+
+  rebuild();
+  show();
+  load(SAMPLES[0][1], false);
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>

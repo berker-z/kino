@@ -17,3 +17,4 @@ research/*/media/
 **/.claude/*
 !/.claude/skills/
 .mcp.json
+__pycache__/

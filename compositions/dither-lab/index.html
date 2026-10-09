@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <!-- assets/ is local only. Plate credits: assets/plates/CREDITS.txt; the train clip is
+         research/dither/media/footage/train.mp4 (CC BY-SA 4.0) run through scripts/dither.py. -->
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #16120e; }
+      #root { width: 100%; height: 100%; position: relative; }
+      #train { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="21" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="15" data-track-index="0"></div>
+      <video id="train" src="assets/train-dithered.mp4" muted playsinline data-start="15" data-duration="6" data-track-index="1"></video>
+    </div>
+    <script>
+      // Lab for ditherPass: five random photos (not engravings) with slow
+      // camera moves, Bayer 8 in three-tone sepia. Then six seconds of real
+      // footage dithered offline by scripts/dither.py with the same settings,
+      // played as an ordinary clip: the two halves of the tool side by side.
+      const W = 2560, H = 1440, FPS = 30, SHOT = 3;
+      const names = ["portrait", "night", "cat", "concert", "statue"];
+      // Each shot: a push from z0 to z1 about a focus point, drifting a little.
+      const moves = [
+        { z: [1.0, 1.12], fx: 0.5, fy: 0.42, dx: 0.0 },
+        { z: [1.08, 1.0], fx: 0.5, fy: 0.45, dx: -0.03 },
+        { z: [1.0, 1.1], fx: 0.6, fy: 0.4, dx: 0.02 },
+        { z: [1.05, 1.15], fx: 0.5, fy: 0.5, dx: 0.0 },
+        { z: [1.12, 1.0], fx: 0.5, fy: 0.35, dx: 0.0 },
+      ];
+      const smooth = (x) => x * x * (3 - 2 * x);
+      const loaded = names.map((n) => {
+        const img = new Image();
+        img.src = `assets/plates/${n}.jpg`;
+        return img.decode().then(() => img);
+      });
+      Promise.all(loaded).then((plates) => {
+        function paint(ctx, t) {
+          const i = Math.min(names.length - 1, Math.floor(t / SHOT));
+          const p = smooth((t - i * SHOT) / SHOT);
+          const m = moves[i];
+          const z = m.z[0] + (m.z[1] - m.z[0]) * p;
+          ctx.filter = "grayscale(1)";
+          ctx.translate(W * m.fx, H * m.fy);
+          ctx.scale(z, z);
+          ctx.translate(-W * (m.fx + m.dx * p), -H * m.fy);
+          ctx.drawImage(plates[i], 0, 0, W, H);
+          ctx.filter = "none";
+        }
+        const tl = gsap.timeline({ paused: true });
+        Kino.ditherPass(document.getElementById("stage"), tl, { width: W, height: H, scale: 2, duration: 15, fps: FPS, method: "bayer-8", palette: "sepia-3", paint });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>

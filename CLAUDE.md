@@ -12,14 +12,16 @@ src/                 TypeScript library, bundled to window.Kino
   signals/           beatMap, beatTicks, tickAt, bandEnergy, bassFollower, decodeSamples, autoGain
   sources/           preparePlate, sunprint, htmlPlate, painters, spectrumFeed, networkTree, pen, beam, teletext, canvas type
   arrange/           sheetCamera, printRun, registerDrift, printStrip, tornWipe, lensPass
-  passes/            screenPass (ramp / grille / lens / colour mode), risoPass (two-ink print), ditherCanvas
+  passes/            screenPass (ramp / grille / lens / colour mode), risoPass (two-ink print), ditherPass (2-4 tone ordered dither), ditherCanvas
   looks/             MotionAesthetic bundles: cyanotype, blueprint, phosphor, teletextTV, riso, signalDither, ...
   dom/               first-era GSAP + CSS pieces (motion, heroTitle, heroReveal, grain, crt...)
 scripts/build.mjs    bundles src/ and copies kino.js, gsap, fonts into every compositions/*/vendor/
 scripts/spectrum.py  per-frame spectrum of an audio file -> JSON or window.<NAME> JS
 scripts/samples.py   raw waveform samples (int8, base64) -> window.<NAME> JS
+scripts/dither.py    dither a photo or footage file (same settings as ditherPass, plus FS with hysteresis)
 compositions/        each is a standalone HyperFrames project (index.html + assets/)
-research/            teardowns of reference videos (report + scripts; media/ is gitignored)
+research/            teardowns and experiments (reports + scripts; media/ is gitignored)
+tools/dither/        the dither playground: `npm run playground`, then http://127.0.0.1:8077/tools/dither/
 docs/                architecture.md, lessons.md, primitives/*.md
 examples/            rendered outputs (videos gitignored); examples/styles/index.html is the four-styles showcase
 ```

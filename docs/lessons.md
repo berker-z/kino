@@ -36,6 +36,14 @@ Things we learned the hard way building the first scenes. Read this before writi
 
 Skipped on purpose: `hw-boil` and the other hand-drawn jitter. Re-posing every few frames is exactly the jitter Berker rejected in the risograph.
 
+## Dithering photos and footage
+
+- Prep decides whether a photo reads, more than the algorithm does. Levels, local contrast, an S-curve and a little sharpening, measured once per shot, never per frame.
+- Two dark colours close together dither into mud. Add a third, light tone.
+- Error diffusion boils in motion (13 to 22% of pixels flip with nothing changing). Fixed threshold maps don't (under 1%). Hysteresis rescues Floyd-Steinberg for footage, offline only.
+- The famous ImageMagick engraving recipe is a threshold, not a dither: IM7's `-monochrome` ignores `-dither`. Its texture is the engraving's own lines.
+- Berker's pick: Bayer 8 first, blue noise second. The fake line engraving was a dead end.
+
 ## Thin lines and pixels
 
 Moving fine line art is where most of the time went. The short version:

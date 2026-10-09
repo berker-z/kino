@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dither Tool</title>
+<style>
+  :root { --bg: #100D0A; --panel: #18140F; --line: #2E271F; --text: #DDD3C4; --muted: #9A8C78; --accent: #C9A87A; }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #F3EEE3; --panel: #EAE3D4; --line: #D3C8B4; --text: #221B13; --muted: #6F6252; --accent: #7A5B33; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 "Inter Tight", system-ui, sans-serif; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 0 16px; }
+  header { padding: 56px 0 20px; }
+  .kicker { font: 500 13px "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .kicker a { color: var(--accent); }
+  h1 { font-size: clamp(40px, 6vw, 80px); line-height: .95; margin: 12px 0 18px; font-weight: 800; letter-spacing: -.02em; }
+  h2 { font-size: 30px; margin: 64px 0 6px; letter-spacing: -.01em; }
+  h2 small { font: 500 13px "IBM Plex Mono", monospace; color: var(--accent); letter-spacing: .1em; margin-right: 10px; vertical-align: 6px; }
+  p, ul { max-width: 880px; margin: 0 0 12px; }
+  li { margin: 0 0 6px; }
+  .lede { font-size: 20px; }
+  code { font: 14px "IBM Plex Mono", monospace; background: var(--panel); padding: 1px 5px; border-radius: 2px; }
+  .grid { display: grid; gap: 8px; margin: 14px 0 6px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+  .grid.two { grid-template-columns: repeat(auto-fill, minmax(min(100%, 620px), 1fr)); }
+  figure { margin: 0; }
+  figure img, figure video { width: 100%; display: block; border: 1px solid var(--line); border-radius: 2px; background: #000; }
+  figure img { cursor: zoom-in; }
+  figcaption { font: 12px/1.4 "IBM Plex Mono", monospace; color: var(--muted); padding: 5px 0 0; }
+  figcaption b { color: var(--accent); font-weight: 500; }
+  .verdict { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; margin: 18px 0; max-width: 880px; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; font: 14px "IBM Plex Mono", monospace; margin: 12px 0; }
+  td, th { border-bottom: 1px solid var(--line); padding: 7px 22px 7px 0; text-align: left; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; }
+  td.good { color: var(--accent); }
+  .legend { font: 13px "IBM Plex Mono", monospace; color: var(--muted); margin: 6px 0 0; }
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.94); display: none; align-items: center; justify-content: center; z-index: 10; cursor: zoom-out; padding: 16px; }
+  .lightbox img { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+  footer { border-top: 1px solid var(--line); margin-top: 70px; padding: 24px 0 60px; color: var(--muted); font-size: 15px; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="kicker">kino · research · dither · round two · <a href="index.html">round one: the Doré recipe</a></div>
+  <h1>A dither tool<br>for anything</h1>
+  <p class="lede">Round one found a look that only works on engravings. This round is about a tool: point it at any photo or any footage and get a dithered picture that reads, holds still and keeps your colours.</p>
+  <p>The engine has three stages, each swappable: <b>prep</b> (get the picture ready), <b>method</b> (turn tone into pattern) and <b>palette</b> (2 to 4 colours). Code in <code>engine.py</code>, experiments in <code>round2.py</code>. Click any still for full size.</p>
+</header>
+
+<main class="wrap">
+
+<h2><small>01</small>Prep decides whether a photo reads</h2>
+<p>Same method (blue noise), same three-tone sepia, three preps. <b>none</b> is the photo as it comes. <b>levels</b> stretches the darkest and lightest percent to the ends. <b>punch</b> adds local contrast (a wide unsharp mask), a gentle S-curve and a little sharpening. Round one fed photos in raw; that's most of why they looked muddy.</p>
+<div class="grid" id="g-prep"></div>
+<div class="verdict">Punch, every time. Faces get their shape back, signs and edges come through, and nothing looks processed once it's dithered. It's the default.</div>
+
+<h2><small>02</small>Methods</h2>
+<p>All with punch prep and three tones. <b>Floyd-Steinberg</b> and <b>Atkinson</b> diffuse the error to neighbours: smooth, organic, the best stills. <b>Bayer</b> is the regular cross-hatch grid of old computers. <b>Blue noise</b> is a fixed grain with no pattern you can see. <b>Halftone</b> is round dots on a 45° screen, like print. <b>Lines</b> is a horizontal line screen, which bands badly with three tones.</p>
+<div class="grid" id="g-method"></div>
+
+<h2><small>03</small>Three tones fix the mud</h2>
+<p>Your colour pairs, plus three- and four-tone ramps in the same families. Two tones close together is what made round one murky; a third, lighter tone gives highlights somewhere to go without losing the mood.</p>
+<div class="grid" id="g-tones"></div>
+
+<h2><small>04</small>On everything</h2>
+<p>Every photo from round one plus two Doré plates, with the default (punch, blue noise, sepia in three tones), and Floyd-Steinberg next to it for comparison.</p>
+<div class="grid" id="g-all"></div>
+<div class="verdict">This is the answer to "it only works on engravings". Portraits, food, a cat, a concert, a night street, a spacewalk and a Doré plate all sit in the same language now.</div>
+
+<h2><small>05</small>Footage</h2>
+<p>Four public-domain and CC clips, six seconds each: an astronaut in a cluttered module, horses in a flat field, a train pulling into a lit station, open sea. Each is dithered frame by frame by five methods, in three-tone sepia.</p>
+<p><b>Boil</b> is what matters: the share of pixels that flip in places where the picture didn't change (source moved less than 1%). Real motion makes pixels change; boil is the extra.</p>
+<div class="scroll"><table>
+  <tr><th>clip</th><th>Floyd-Steinberg</th><th>FS + hysteresis</th><th>Bayer 8</th><th>blue noise</th><th>halftone</th></tr>
+  <tr><td>astronaut</td><td>12.7%</td><td class="good">0.5%</td><td class="good">0.3%</td><td class="good">0.3%</td><td class="good">0.2%</td></tr>
+  <tr><td>horses</td><td>18.5%</td><td class="good">1.2%</td><td class="good">0.3%</td><td class="good">0.3%</td><td class="good">0.3%</td></tr>
+  <tr><td>train</td><td>22.3%</td><td class="good">1.2%</td><td class="good">0.7%</td><td class="good">0.7%</td><td class="good">0.6%</td></tr>
+  <tr><td>waves</td><td>16.5%</td><td>2.9%</td><td class="good">0.4%</td><td class="good">0.4%</td><td class="good">0.5%</td></tr>
+</table></div>
+<p><b>Hysteresis</b> is the new trick: a pixel keeps last frame's tone unless its value has clearly moved past the threshold. It cuts Floyd-Steinberg's boil by 10 to 25 times and keeps its smooth look. It needs the previous frame, so it works in an offline tool (footage in, footage out) and not inside a HyperFrames render, which can ask for any frame in any order.</p>
+<p>The grids below are 1:1 centre crops, so you see real pixels. Top row: the prepped source, Floyd-Steinberg, FS + hysteresis. Bottom row: Bayer 8, blue noise, halftone.</p>
+<div class="grid two" id="g-grids"></div>
+<p class="legend">Full-frame versions of every method: <span id="fulls"></span></p>
+<div class="verdict">Plain Floyd-Steinberg is out for anything that moves. Hysteresis rescues it for footage; the threshold methods are stable by construction and are what goes into compositions. Waves are the hard case for hysteresis (everything moves a little all the time), so the stable fixed patterns win there.</div>
+
+<h2><small>06</small>What I'd build</h2>
+<ul>
+  <li><b><code>ditherPass</code> in kino</b>: any source (canvas painting, photo, or a <code>&lt;video&gt;</code>) through prep, a threshold method (blue noise, Bayer, halftone) and a 2 to 4 tone palette, at 1×, 2× or 3× pixels. Seek-safe, so it renders like everything else. Replaces the current <code>ditherCanvas</code>, which is two colours and Bayer only.</li>
+  <li><b><code>scripts/dither.py</code></b>: footage in, footage out, with the same settings plus Floyd-Steinberg with hysteresis. For dithering real video before it goes into a piece, or as a finished thing on its own.</li>
+  <li><b>Palette presets</b> in the looks: sepia, ice, prussian, oxblood, phosphor, paper, in two to four tones.</li>
+  <li>Then a short piece with real footage and photos mixed, cut to music, to see it all hold together.</li>
+</ul>
+</main>
+
+<footer class="wrap">research/dither · media/ is local only · <code>python3 research/dither/round2.py stills|footage</code> · footage credits in <code>media/footage/CREDITS.txt</code></footer>
+
+<div class="lightbox" id="lightbox"><img alt=""></div>
+<script>
+  const O = "media/out2/";
+  function fill(id, items) {
+    const g = document.getElementById(id);
+    for (const [src, cap] of items) {
+      const f = document.createElement("figure");
+      const isVid = src.endsWith(".mp4");
+      const m = document.createElement(isVid ? "video" : "img");
+      m.src = src;
+      if (isVid) { m.controls = true; m.loop = true; m.muted = true; m.playsInline = true; m.preload = "metadata"; }
+      else m.loading = "lazy";
+      const c = document.createElement("figcaption");
+      c.innerHTML = cap;
+      f.append(m, c);
+      g.append(f);
+    }
+  }
+  const picks = ["portrait", "cat", "mountain", "night"];
+  fill("g-prep", picks.flatMap((n) => ["none", "levels", "punch"].map((p) => [`${O}s1-prep/${n}--${p}.png`, `${n} · <b>${p}</b>`])));
+  const methods = ["floyd-steinberg", "atkinson", "bayer-8", "blue-noise", "halftone", "lines"];
+  fill("g-method", picks.flatMap((n) => methods.map((m) => [`${O}s2-method/${n}--${m}.png`, `${n} · <b>${m}</b>`])));
+  const pals = ["sepia-2", "sepia-3", "sepia-4", "ice-2", "ice-3", "prussian-3", "oxblood-3", "phosphor-3", "bone-2", "paper-3"];
+  fill("g-tones", ["portrait", "mountain"].flatMap((n) => pals.map((p) => [`${O}s3-tones/${n}--${p}.png`, `${n} · <b>${p}</b>`])));
+  const all = ["portrait", "night", "cat", "mountain", "car", "flower", "concert", "food", "astronaut", "statue", "dish", "hands", "crowd", "waves", "dore-2-ref", "dore-0"];
+  fill("g-all", all.flatMap((n) => [[`${O}s4-everything/${n}--blue-noise.png`, `${n} · <b>blue noise</b>`], [`${O}s4-everything/${n}--floyd-steinberg.png`, `${n} · floyd-steinberg`]]));
+  const clips = ["astronaut", "horses", "train", "waves"];
+  fill("g-grids", clips.map((c) => [`${O}f-footage/${c}--grid.mp4`, `<b>${c}</b> · source · FS · FS + hysteresis / Bayer · blue noise · halftone`]));
+  const fm = ["floyd-steinberg", "fs-hysteresis", "bayer-8", "blue-noise", "halftone"];
+  document.getElementById("fulls").innerHTML = clips.map((c) => `${c}: ` + fm.map((m) => `<a href="${O}f-footage/${c}--${m}.mp4">${m}</a>`).join(", ")).join(" · ");
+  const box = document.getElementById("lightbox");
+  document.addEventListener("click", (e) => {
+    if (e.target.matches("figure img")) { box.querySelector("img").src = e.target.src; box.style.display = "flex"; }
+    else if (e.target.closest("#lightbox")) box.style.display = "none";
+  });
+</script>
+</body>
+</html>

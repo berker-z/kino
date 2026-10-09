@@ -29,6 +29,8 @@ Everything is a pure function of time. HyperFrames seeks frames in any order, so
 
 Data comes from `analyze-beatgrid.py` (audiomap), `scripts/spectrum.py` (spectrum) and `scripts/samples.py` (raw samples).
 
+Footage is dithered offline by `scripts/dither.py` (same settings as `ditherPass`, plus Floyd-Steinberg with hysteresis) and used as an ordinary `<video>`.
+
 ### `sources/`: things that draw
 | piece | draws |
 |---|---|
@@ -60,7 +62,8 @@ Some arrangements are still inside their compositions because they belong to one
 |---|---|---|
 | `screenPass` | one grayscale (or colour) canvas | cyanotype on a Trinitron, blueprint print, phosphor tube, colour TV |
 | `risoPass` | two separations, one per ink | a two-colour riso print |
-| `ditherCanvas` | one grayscale canvas | 1-bit or smooth two-colour |
+| `ditherPass` | one grayscale canvas (photos, camera moves) | 2-4 tone ordered dither: Bayer 8, blue noise, halftone; prep that makes photos read |
+| `ditherCanvas` | one grayscale canvas | 1-bit or smooth two-colour (the first waves video; prefer `ditherPass`) |
 
 ### `looks/`: bundles
 A look (`MotionAesthetic`) carries a palette, fonts, motion grammar, and the settings for its pass in `texture.screen` or `texture.riso`. Spread those into the pass:

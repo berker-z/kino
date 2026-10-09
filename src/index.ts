@@ -26,6 +26,8 @@ export {signalDither} from "./looks";
 export {signalPalettes} from "./looks/signal-dither";
 export {timeDriver} from "./runtime/time-driver";
 export {ditherCanvas} from "./passes/dither-canvas";
+export {ditherPass, ditherer, ditherPalettes, ditherPreps, ditherSteps} from "./passes/dither-pass";
+export type {DitherMethod, DitherPrep, DitherSettings, Ditherer, DitherPost as DitherPassPost, DitherPassPainter, DitherPassOptions} from "./passes/dither-pass";
 export type {DitherPost, DitherPainter} from "./passes/dither-canvas";
 export {crt} from "./dom/effects/crt";
 export {screenPass, prussianRamp, blueprintRamp, phosphorRamp, makeRamp} from "./passes/screen-pass";

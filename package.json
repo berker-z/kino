@@ -5,7 +5,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "playground": "npm run build && echo 'dither playground: http://127.0.0.1:8077/tools/dither/' && python3 -m http.server 8077 --bind 127.0.0.1"
   },
   "dependencies": {
     "@fontsource/anton": "5.3.0",
