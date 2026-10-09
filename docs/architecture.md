@@ -44,6 +44,7 @@ Footage is dithered offline by `scripts/dither.py` (same settings as `ditherPass
 | `teletext`, `sixels`, `sixelText` | teletext pages: cells, glyphs, block mosaics |
 | `wipeText`, `caption`, `haloInk` | type painted into the picture |
 | `htmlPlate`, `drawPart` | a page set in HTML and CSS, snapshotted once, drawn in measured parts |
+| `copyGenerations`, `copyStep` | a sheet photocopied and the copy copied, N times, computed once (toner fixed to the sheet) |
 
 ### `arrange/`: how it moves in time
 | piece | does |
@@ -60,6 +61,9 @@ Footage is dithered offline by `scripts/dither.py` (same settings as `ditherPass
 | `fragmentGrid`, `drawFragments` | a set word assembling from slabs of its own letterforms (superseded by strokes in the typesetting piece) |
 | `lineRise` | measured lines rising into place behind their own boxes |
 | `temporalScan` | a frame built from strips of a source, each at a different source time |
+| `shutterIntegrate` | one frame exposed over a shutter interval (light summed in linear on a float buffer) plus a sharp flash sample; `glow` for lights brighter than white |
+| `surfaceProject` | a picture thrown onto a flat surface in a photographed room through a four-corner homography, as added light scaled by the surface's albedo, with an explicit occlusion matte |
+| `transmissionComposite` | light through a density plate: `backlight · exp(-extinction · density) · tint`, the room around it |
 
 Some arrangements are still inside their compositions because they belong to one style: the scope's mode squash and power-off, teletext's page search. Promote them when a second piece needs them.
 
@@ -71,6 +75,8 @@ Some arrangements are still inside their compositions because they belong to one
 | `ditherPass` | one grayscale canvas (photos, camera moves) | 2-4 tone ordered dither: Bayer 8, blue noise, halftone; prep that makes photos read |
 | `ditherCanvas` | one grayscale canvas | 1-bit or smooth two-colour (the first waves video; prefer `ditherPass`) |
 | `filmPass` | one RGB canvas | black-and-white film, printed: halation, toe and S-curve, grain, weave, optional split tone |
+| `digicamPass` | one RGB canvas | a cheap late-2000s digital camera: hard clip into lavender white, crushed blue-black shadows, cold bloom, fringe, sharpening halos, shadow noise |
+| `infraredPass` | one RGB canvas (+ optional mattes) | art-directed false infrared: pale luminous foliage, black sky, red-filtered black and white; guesses from colour unless given mattes |
 
 ### `looks/`: bundles
 A look is a curated combination of three things that are independent underneath:
@@ -129,6 +135,8 @@ Because sources paint grayscale and passes decide the medium, most combinations 
 | `ditherPass` | one canvas | Rec. 709 luma | light | reduced to luma |
 | `ditherCanvas` | one canvas | luma | the `ink` colour | reduced to luma |
 | `filmPass` | one canvas | RGB | light | kept (or split-toned from luma) |
+| `digicamPass` | one canvas | RGB | light | kept |
+| `infraredPass` | one canvas, optional `regions` (red foliage, blue sky) | RGB | light | used to guess foliage and sky, then toned |
 
 - Every pass fills its source with black before calling `paint`, so transparent areas read as black. `htmlPlate` is transparent by default; give it a `background` if the page should be paper.
 - With `risoPass`, a source chooses its drum: paint it into one separation, or into both for a near-black overprint.
@@ -139,5 +147,6 @@ Because sources paint grayscale and passes decide the medium, most combinations 
 
 - `docs/arsenal.md`: every technique as a move, with how it feels and what pairs with it. Read it before proposing a piece (the `direct` skill).
 - `docs/lessons.md`: what we learned the hard way, including Berker's taste verdicts.
-- `docs/primitives/`: one page per primitive with the reasons behind its defaults (`spectrum-feed`, `screen-pass`, `riso-pass`, `double-exposure`, `film-pass`, `type-reveal`, `temporal-scan`, ...).
+- `docs/primitives/`: one page per primitive with the reasons behind its defaults (`spectrum-feed`, `screen-pass`, `riso-pass`, `double-exposure`, `film-pass`, `type-reveal`, `temporal-scan`, `digicam-pass`, `shutter`, `xerox`, `surface-project`, `infrared-pass`, `transmission`, ...).
+- `examples/expansion/index.html`: the six operations of the 2026-10-09 expansion, with A/Bs, numbers and verdicts.
 - `.claude/skills/teardown/`: how to learn a look from someone else's video.

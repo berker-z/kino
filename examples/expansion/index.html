@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Six Operations</title>
+<style>
+  @font-face { font-family: "Inter Tight"; font-weight: 400; src: url("../../node_modules/@fontsource/inter-tight/files/inter-tight-latin-400-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Inter Tight"; font-weight: 600; src: url("../../node_modules/@fontsource/inter-tight/files/inter-tight-latin-600-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Inter Tight"; font-weight: 800; src: url("../../node_modules/@fontsource/inter-tight/files/inter-tight-latin-800-normal.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-weight: 400; src: url("../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-weight: 500; src: url("../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2") format("woff2"); }
+  :root { --bg: #0B0C0F; --panel: #13151A; --line: #262A33; --text: #D6D9E0; --muted: #8A90A0; --accent: #F2F4F8; --tab: var(--accent); }
+  body[data-s="digicam"] { --tab: #DCD3FF; }
+  body[data-s="shutter"] { --tab: #FFE2B8; }
+  body[data-s="xerox"] { --tab: #EDEAE3; }
+  body[data-s="projection"] { --tab: #F3D9B5; }
+  body[data-s="infrared"] { --tab: #E9EEF2; }
+  body[data-s="transmission"] { --tab: #F2B8A0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 "Inter Tight", system-ui, sans-serif; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+  header { padding: 56px 0 26px; }
+  .kicker { color: var(--muted); font: 500 13px "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
+  h1 { font-weight: 800; font-size: clamp(42px, 7vw, 92px); line-height: .95; margin: 12px 0 18px; color: var(--accent); letter-spacing: -.02em; }
+  header p { max-width: 860px; margin: 0 0 10px; color: #B9BECA; }
+  nav { position: sticky; top: 0; z-index: 3; background: rgba(11,12,15,.94); border-bottom: 1px solid var(--line); border-top: 1px solid var(--line); }
+  nav .wrap { display: flex; gap: 2px; overflow-x: auto; }
+  nav button { font: 500 14px "IBM Plex Mono", monospace; letter-spacing: .06em; background: none; border: 0; color: var(--muted); padding: 16px 16px 14px; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+  nav button.on { color: var(--accent); border-bottom-color: var(--tab); }
+  section { display: none; padding: 34px 0 60px; }
+  section.on { display: block; }
+  video { width: 100%; display: block; background: #000; border: 1px solid var(--line); border-radius: 3px; aspect-ratio: 16 / 9; }
+  .meta { display: flex; gap: 18px; flex-wrap: wrap; font: 500 13px "IBM Plex Mono", monospace; color: var(--muted); margin: 12px 0 26px; }
+  .meta b { color: var(--tab); font-weight: 500; }
+  h2 { font-size: 40px; font-weight: 800; margin: 0 0 6px; color: var(--accent); letter-spacing: -.01em; }
+  .lede { font-size: 20px; color: #C9CDD6; max-width: 900px; margin: 0 0 28px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 40px; margin-top: 30px; }
+  @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+  h3 { font: 500 13px "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--tab); margin: 0 0 8px; }
+  .block p { margin: 0 0 10px; }
+  ul { margin: 0; padding-left: 18px; } li { margin: 0 0 8px; }
+  code { font: 14px "IBM Plex Mono", monospace; color: var(--accent); background: #1B1E25; padding: 1px 5px; border-radius: 2px; }
+  .stills { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin: 10px 0 0; }
+  .stills img, .ab img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 2px; cursor: zoom-in; }
+  .ab { margin: 26px 0 0; }
+  .ab figure { margin: 0 0 18px; }
+  .ab figcaption { color: var(--muted); font-size: 15px; margin-top: 6px; max-width: 1000px; }
+  .wide { grid-column: 1 / -1; }
+  .verdict { display: inline-block; font: 500 12px "IBM Plex Mono", monospace; letter-spacing: .08em; padding: 2px 8px; border-radius: 2px; background: var(--tab); color: #0B0C0F; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; margin: 10px 0 30px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 10px; border-bottom: 1px solid var(--line); }
+  th { font: 500 12px "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .scroll { overflow-x: auto; }
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: none; align-items: center; justify-content: center; z-index: 10; cursor: zoom-out; padding: 16px; }
+  .lightbox img { max-width: 100%; max-height: 100%; }
+  footer { border-top: 1px solid var(--line); padding: 26px 0 60px; color: var(--muted); font-size: 15px; }
+</style>
+</head>
+<body data-s="overview">
+<header class="wrap">
+  <div class="kicker">kino · 2026-10-09 · KINO_VISUAL_EXPANSION_MASTER_SPEC.md</div>
+  <h1>Six operations</h1>
+  <p>Six new operations, each proved by a short finished film at 2560×1440, a mechanical A/B on other inputs, automated tests, and a doc. Digital flash, shutter drag, photocopy, projection, false infrared, transmitted light. None of them has a verdict from Berker yet; everything here is provisional.</p>
+  <p>Videos are local files next to the composition outputs in <code>examples/xp-*/</code> (gitignored). Stills are in <code>examples/expansion/stills/</code>. Started from commit <code>61c5e53</code>. Rendered on this machine with headless Chrome on SwiftShader (CPU WebGL); times are for that, not for a GPU.</p>
+</header>
+<nav><div class="wrap">
+  <button data-s="overview" class="on">OVERVIEW</button>
+  <button data-s="digicam">DIGICAM</button>
+  <button data-s="shutter">SHUTTER DRAG</button>
+  <button data-s="xerox">XEROX</button>
+  <button data-s="projection">PROJECTION</button>
+  <button data-s="infrared">INFRARED</button>
+  <button data-s="transmission">TRANSMISSION</button>
+</div></nav>
+
+<section id="overview" class="on"><div class="wrap">
+  <h2>Where they landed</h2>
+  <p class="lede">The short version: projection and transmitted light are the most original and the most physically legible; shutter drag is the most striking but the most expensive; digicam works but depends on the composition authoring the flash; photocopy is convincing and cheap but only for still sheets; false infrared looks right on the picture it was made for and wrong on others, as it has to.</p>
+  <div class="scroll"><table>
+    <tr><th>Phase</th><th>Composition</th><th>New operation</th><th>Reused</th><th>Runtime (12 s)</th><th>Automated checks</th><th>A/B result</th><th>Proposal</th></tr>
+    <tr><td>Digicam</td><td>THE STAIRWELL</td><td><code>digicamPass</code></td><td>timeDriver, gl.ts, filmPass's threshold filter; filmPass for the A/B</td><td>177 s, 110 MB</td><td>8 browser</td><td>Works on the authored scene and the cat; a bright room only gets "cold cheap snapshot"; saturated graphics go pastel</td><td>Provisional; keep if the stairwell lands</td></tr>
+    <tr><td>Shutter drag</td><td>AFTERIMAGE</td><td><code>shutterIntegrate</code>, <code>exposureSamples</code></td><td>digicamPass, filmPass, horse frames from xp-temporal-footage</td><td>2290 s, 102 MB</td><td>6 unit, 6 browser</td><td>Trails and the sharp flash are clearly separate; works on footage too</td><td>Keep (refine cost)</td></tr>
+    <tr><td>Xerox</td><td>THE TESTAMENT</td><td><code>copyGenerations</code>, <code>copyStep</code></td><td>htmlPlate, timeDriver; ditherPass and risoPass for comparison</td><td>49 s, 19 MB</td><td>5 unit</td><td>Reads as copy of a copy; unlike dither or riso</td><td>Keep for sheets</td></tr>
+    <tr><td>Projection</td><td>SANCTUARY</td><td><code>surfaceProject</code> + homography helpers</td><td>filmPass</td><td>197 s, 72 MB</td><td>4 unit, 8 browser</td><td>Clearly light on stone; the naive overlay is clearly not</td><td>Keep</td></tr>
+    <tr><td>Infrared</td><td>WHITE ORCHARD</td><td><code>infraredPass</code></td><td>timeDriver, gl.ts</td><td>73 s, 133 MB</td><td>8 browser</td><td>Right on foliage under blue sky; moss reads as leaves; mattes fix what the guess can't</td><td>Provisional</td></tr>
+    <tr><td>Transmission</td><td>RELIQUARY</td><td><code>transmissionComposite</code>, <code>transmittance</code></td><td>filmPass (glow)</td><td>62 s, 32 MB</td><td>1 unit, 6 browser</td><td>Backlit matter, not a glow filter; the screen blend paints over the leads</td><td>Keep</td></tr>
+  </table></div>
+  <div class="cols">
+    <div class="block"><h3>Refine next</h3><p><b>Projection</b> and <b>transmitted light</b>. Both are new to kino, both have a physical rule you can see (light added in proportion to the wall; light attenuated by matter), both are cheap, and both made the most finished-looking films. Projection wants a second room and non-rectangular content; transmission wants a real photographic plate (a scanned glass negative) and light that falls into the room for real.</p></div>
+    <div class="block"><h3>Drop first</h3><p><b>False infrared</b>, if kino had to stay small. It's the least general: it's a colour guess that only holds for one kind of picture, and with mattes it's mostly authored work. It's also the most familiar look of the six. It did make a good film.</p></div>
+    <div class="block wide"><h3>What was inspected, and how</h3><p>Every hero film was looked at as stills at four or more moments during development (snapshots), and revised at least once on what was wrong (each section says what). The A/B rows below are frames pulled from the A/B renders at identical timestamps. Mechanical properties (passthrough, bounds, determinism under seeks, mapping, attenuation, noise on black) are in the tests and were not judged by eye. Nobody has watched the films at full speed on Berker's monitor yet, and taste is his call.</p></div>
+  </div>
+</div></section>
+
+<section id="digicam"><div class="wrap">
+  <h2>The Stairwell</h2>
+  <p class="lede">A white plastic chair on the stairs of a cluttered house, photographed with an on-camera flash from too close. Neither photograph is a flash photograph: the stairwell is lit by a curtained window, the chair stands in a garden in evening sun. The flash is authored, then <code>digicamPass</code> gives it a cheap camera's response.</p>
+  <video src="../xp-digicam/the-stairwell.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="meta"><span><b>compositions/xp-digicam</b></span><span>12 s · 24 fps</span><span>render 177 s</span><span>110 MB</span><span>A/B: ab/ab.html</span></div>
+  <div class="stills"><img src="stills/digicam-the-stairwell-00.50s.jpg" alt=""><img src="stills/digicam-the-stairwell-06.00s.jpg" alt=""><img src="stills/digicam-the-stairwell-11.80s.jpg" alt=""></div>
+  <div class="ab">
+    <figure><img src="stills/digicam-ab-scene.jpg" alt=""><figcaption>The stairwell at t = 6: the authored scene raw, through digicamPass, through filmPass (with THE SILENT CITY's settings: at its own defaults filmPass is too gentle to tell from raw at this size). The flash is the authoring; digicam adds the clip, the blue-black floor, the halos and the cold.</figcaption></figure>
+    <figure><img src="stills/digicam-ab-livingroom.jpg" alt=""><figcaption>A bright, evenly lit living room, same settings. After the fry it's crunchy, blown and oversaturated: a cheap camera, clearly. Still not a flash photograph: there's no authored light, and a pass can't make one.</figcaption></figure>
+    <figure><img src="stills/digicam-ab-cat.jpg" alt=""><figcaption>A cat close-up in daylight, same settings. Strong natural contrast gets closest without help.</figcaption></figure>
+    <figure><img src="stills/digicam-ab-geometry.jpg" alt=""><figcaption>Procedural RGB. The sharpening halos ring the spheres; big saturated patches wash pastel through the bloom.</figcaption></figure>
+  </div>
+  <div class="cols">
+    <div class="block"><h3>Reusable</h3><p><code>digicamPass</code>: lens fringe, in-camera sharpening, optional chroma blocks, exposure and coverage falloff, fixed-pattern sensor gain, cold white balance, a tight cold bloom, shadow noise that is zero at black, a hard clip with lavender keyed on the smallest channel, a narrow shadow hue. 16 settings, all documented in <code>docs/primitives/digicam-pass.md</code>.</p></div>
+    <div class="block"><h3>Composition only</h3><p>The flash: a falloff matte in plate coordinates, the chair at a high gain through its own matte (<code>make-mask.py</code>, a colour key), the chair's silhouette offset as a hard shadow, the room's ambient sinking as the camera "exposes for the flash". Red-eye was left out on purpose.</p></div>
+    <div class="block"><h3>Revisions</h3><p>Round two, after Berker's look ("these all look lowkey the same... fry the digicam a bit more"): added the camera's curve (a steep S and 1.3 saturation), clipped about two stops early, doubled the sharpening, stronger fringe and falloff, JPEG chroma blocks on. Before that, take one was a blue grade: cold balance 0.55 and a shadow tint reaching up to luma 0.3 turned the living room violet and red to pink, and the lavender tint keyed on luma washed yellow to white. Narrowed the tint band, lowered the cold, keyed lavender on the minimum channel. The first hero render was 234 MB: per-pixel luma noise every frame. Noise moved to a 1.4 px lattice and down to 0.028: 110 MB now, still heavy because chroma noise still changes every frame.</p></div>
+    <div class="block"><h3>Where it fails</h3><ul><li>On an ordinary bright interior it isn't flash. It can't be without authored light.</li><li>Large saturated areas go pastel (the bloom veils them).</li><li>The chair cut-out's lighting doesn't match the stairs; the flash and the shadow hide most of it, not all.</li></ul></div>
+    <div class="block"><h3>Tests</h3><p><code>tests/browser/digicam-pass.html</code>, 8 checks: exact passthrough at strength 0; black field stays exactly 0; exposure −3/+3 ordered and in range; R/G/B stay dominant; noise sd 12.6 on grey, moves per frame, repeats after out-of-order seeks; seed changes only noise and pattern; fixed pattern identical across frames; checker and colour bars keep their order.</p></div>
+    <div class="block"><h3>Proposal</h3><p><span class="verdict">PROVISIONAL</span> Worth keeping if the stairwell lands. Not a look yet: it needs a verdict on the colour of the shadows and the size of the files.</p></div>
+  </div>
+</div></section>
+
+<section id="shutter"><div class="wrap">
+  <h2>Afterimage</h2>
+  <p class="lede">A bare bulb swinging on its cord in an empty school corridor at night, exposed with the shutter open and a rear-curtain flash. The bulb's light piles up into a streak; the flash freezes the shade where it fired. The shutter opens from nothing to 1.1 s and closes again, so the history grows and collapses back onto the present.</p>
+  <video src="../xp-shutter/afterimage.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="meta"><span><b>compositions/xp-shutter</b></span><span>12 s · 24 fps · 64 samples</span><span>render 2290 s</span><span>102 MB</span><span>A/B: ab/ab.html</span></div>
+  <div class="stills"><img src="stills/shutter-afterimage-01.00s.jpg" alt=""><img src="stills/shutter-afterimage-04.50s.jpg" alt=""><img src="stills/shutter-afterimage-07.50s.jpg" alt=""><img src="stills/shutter-afterimage-10.50s.jpg" alt=""></div>
+  <div class="ab">
+    <figure><img src="stills/shutter-ab-components.jpg" alt=""><figcaption>One instant (t = 7.5) four ways: the source at t; trails only (1.1 s, no flash); trails plus the flash (the film's exposure); the same exposure through filmPass instead of digicam. The sharp shade and the streak are separable.</figcaption></figure>
+    <figure><img src="stills/shutter-ab-footage.jpg" alt=""><figcaption>Real footage (galloping horses, frame-addressable JPEGs): one frame, then a 0.5 s shutter with a rear flash at 0.4. No material.</figcaption></figure>
+  </div>
+  <div class="cols">
+    <div class="block"><h3>Reusable</h3><p><code>shutterIntegrate</code> (an arrangement: source sampled over the interval, light summed in linear on a half-float buffer, plus a flash sample and an optional <code>flashSource</code>), <code>glow</code> with <code>glowGain</code> for lights brighter than white, and the pure <code>exposureSamples</code>.</p></div>
+    <div class="block"><h3>Composition only</h3><p>The pendulum, the lamp drawn in canvas, the light pool (the plate times a falloff around the bulb), the flash lighting the near floor, the shutter schedule.</p></div>
+    <div class="block"><h3>Revisions</h3><p>Take one: the windows blazed (the flash lit the whole plate) and the trail was a faint smear, because a canvas can't paint a bulb brighter than white. Take two showed a chain of beads: the bulb's sharp core sampled 40 times. That produced <code>glow</code>: a luminous layer at 30× white, a soft core, 64 samples. Now the streak is continuous and brightest where the pendulum slows, as in a real exposure.</p></div>
+    <div class="block"><h3>Where it fails</h3><ul><li>Cost. One source paint per sample: 38 minutes for 12 s on SwiftShader. Most of it is the scene's own light-pool painting, not the integration.</li><li>The lamp is drawn, and looks drawn when you stop on it.</li><li>102 MB, down from 220 MB before the digicam noise fix and fry.</li></ul></div>
+    <div class="block"><h3>Tests</h3><p>Unit (6): weights sum to 1, duration 0 is one sample, equal slices, flash timing, fade order, determinism, bounded counts. Browser (6): duration 0 = source (diff 0); a static picture unchanged by a 2 s shutter with flash (diff 0); trail across the interval and a sharp square at t; no accumulation across renders; glow saturates; the cost curve (59 / 176 / 645 ms at 4 / 16 / 64 samples, 720p).</p></div>
+    <div class="block"><h3>Proposal</h3><p><span class="verdict">KEEP</span> The most striking of the six in motion. Next: a cheaper glow (reduced resolution), and a real figure instead of a drawn lamp.</p></div>
+  </div>
+</div></section>
+
+<section id="xerox"><div class="wrap">
+  <h2>The Testament</h2>
+  <p class="lede">One page, copied, and the copy copied, while the camera travels over it. Each new copy arrives down the sheet behind a plain edge. Small print goes first, then the diagram's labels fill in; the title still reads at copy 8.</p>
+  <video src="../xp-xerox/the-testament.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="meta"><span><b>compositions/xp-xerox</b></span><span>12 s · 24 fps · 8 copies, 17 s to compute at load</span><span>render 49 s</span><span>19 MB</span><span>A/B: ab/ab.html</span></div>
+  <div class="stills"><img src="stills/xerox-the-testament-02.00s.jpg" alt=""><img src="stills/xerox-the-testament-06.00s.jpg" alt=""><img src="stills/xerox-the-testament-09.50s.jpg" alt=""><img src="stills/xerox-the-testament-11.50s.jpg" alt=""></div>
+  <div class="ab">
+    <figure><img src="stills/xerox-ab-page.jpg" alt=""><figcaption>The same crop of the page: original, copy 1, copy 3, copy 6.</figcaption></figure>
+    <figure><img src="stills/xerox-ab-architecture.jpg" alt=""><figcaption>An architectural photograph with no type: original, copy 3, copy 6.</figcaption></figure>
+    <figure><img src="stills/xerox-ab-materials.jpg" alt=""><figcaption>One neutral photograph: raw, xerox copy 3, ditherPass (Bayer 8, paper-3), risoPass. Three different materials.</figcaption></figure>
+  </div>
+  <div class="cols">
+    <div class="block"><h3>Reusable</h3><p><code>copyGenerations</code> and the pure <code>copyStep</code>: optics, a ragged transfer curve, weak solid fills, toner specks only near edges, the machine's streaks. A precompute: the toner is fixed to the sheet.</p></div>
+    <div class="block"><h3>Composition only</h3><p>The page (htmlPlate type, the dish photograph, the copier diagram in canvas), the camera path, each copy arriving behind an edge, the crisp counter.</p></div>
+    <div class="block"><h3>Revisions</h3><p>Take one: loss too weak (copy 8 still clean), solid loss turned the title grey at copy 1, and two dozen full-height streaks read as ornament. Then a light-copy threshold made fine print vanish as dots. At threshold 0.37 ink spreads each pass and fine print fattens and closes up, which looks like a real copy of a copy.</p></div>
+    <div class="block"><h3>Where it fails</h3><ul><li>Still sheets only. On moving pictures the dirt would have to boil or be recomputed.</li><li>17 s of setup for 8 copies of a 2400×3394 page; fine for a render, slow for a preview.</li><li>The photograph turns to dirty toner a little too politely: real copiers posterise photos harder.</li><li>The first render had a glowing copier light bar riding each new copy in. Berker hated it; it's gone, and each copy now arrives behind a plain edge.</li></ul></div>
+    <div class="block"><h3>Tests</h3><p>Unit (5): seed reproducibility; bounds under extreme settings; hairlines lose more than 40% of their contrast by copy 6 while a 10 px bar keeps 75% density and a solid is dirty but not gone; greys leave the mid band; no visible speck 20 px from any ink.</p></div>
+    <div class="block"><h3>Proposal</h3><p><span class="verdict">KEEP</span> for type and sheets. Cheap at render time, distinct from dither and riso.</p></div>
+  </div>
+</div></section>
+
+<section id="projection"><div class="wrap">
+  <h2>Sanctuary</h2>
+  <p class="lede">A Doré engraving thrown along the stone wall of the Mont-Saint-Michel cloister walk, in perspective, between and behind its colonnettes. The room is dim; the picture is light on the stone, and the moss and joints show through it. The colonnettes cast its shadows.</p>
+  <video src="../xp-projection/sanctuary.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="meta"><span><b>compositions/xp-projection</b></span><span>12 s · 24 fps</span><span>render 197 s</span><span>72 MB</span><span>A/B: ab/ab.html</span></div>
+  <div class="stills"><img src="stills/projection-sanctuary-01.50s.jpg" alt=""><img src="stills/projection-sanctuary-06.00s.jpg" alt=""><img src="stills/projection-sanctuary-09.50s.jpg" alt=""><img src="stills/projection-sanctuary-11.50s.jpg" alt=""></div>
+  <div class="ab">
+    <figure><img src="stills/projection-ab-mapping.jpg" alt=""><figcaption>The projector's frame raw; the same frame laid over the room as a rectangle at 55% (the naive version); surfaceProject.</figcaption></figure>
+    <figure><img src="stills/projection-ab-occlusion.jpg" alt=""><figcaption>Occlusion on and off at the same instant: with it, each colonnette leaves a shadow on the wall.</figcaption></figure>
+    <figure><img src="stills/projection-ab-content.jpg" alt=""><figcaption>Same projector, other content: the slow water footage that was tried first (it reads as a stain, too dark to be a picture), and a numbered grid to read the mapping.</figcaption></figure>
+  </div>
+  <div class="cols">
+    <div class="block"><h3>Reusable</h3><p><code>surfaceProject</code> (homography, additive light scaled by albedo, separate albedo plate, occlusion matte, edge feather, hot spot, focus) and the pure <code>squareToQuad</code>, <code>invert3</code>, <code>applyHomography</code>, <code>assertQuad</code>.</p></div>
+    <div class="block"><h3>Composition only</h3><p>The four corners on the plate, the colonnettes as boxes and their shadow offset, the camera push carrying the quad, the slide drifting down Doré's plate.</p></div>
+    <div class="block"><h3>Revisions</h3><p>Take one was nearly invisible: albedo came from the dimmed room, so dimming darkened the stone's paint. That's why <code>albedo</code> is a separate input. Take two: the water was too dark to read as a picture. Switched to the engraving.</p></div>
+    <div class="block"><h3>Where it fails</h3><ul><li>The wall has niches; the picture stays planar across them instead of bending in.</li><li>The colonnettes catch the picture with the wall's mapping, not their own.</li><li>The authored column boxes are approximate; at 1:1 a shadow edge sits a few px off a column.</li></ul></div>
+    <div class="block"><h3>Tests</h3><p>Unit (4): corners map and invert; affine case; perspective spacing; degenerate quads throw. Browser (8): grid cells land in order; black adds nothing (exact); intensity 0 and outside pixels exact; joints take less light than stone; occlusion removes light only behind the matte; seeks; readable errors; 362 ms per 1440p frame.</p></div>
+    <div class="block"><h3>Proposal</h3><p><span class="verdict">KEEP</span> Refine next.</p></div>
+  </div>
+</div></section>
+
+<section id="infrared"><div class="wrap">
+  <h2>White Orchard</h2>
+  <p class="lede">A tree's autumn canopy against a clear sky, moving in the wind. It arrives in the order an infrared photographer's kit does: colour, then black and white through a deep red filter, then the leaves go pale and luminous and the sky goes to black.</p>
+  <video src="../xp-infrared/white-orchard.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="meta"><span><b>compositions/xp-infrared</b></span><span>12 s · 24 fps · footage, no mattes</span><span>render 73 s</span><span>133 MB</span><span>A/B: ab/ab.html</span></div>
+  <div class="stills"><img src="stills/infrared-white-orchard-01.50s.jpg" alt=""><img src="stills/infrared-white-orchard-04.00s.jpg" alt=""><img src="stills/infrared-white-orchard-06.50s.jpg" alt=""><img src="stills/infrared-white-orchard-10.00s.jpg" alt=""></div>
+  <div class="ab">
+    <figure><img src="stills/infrared-ab-field.jpg" alt=""><figcaption>A daylight field with a line of poplars: raw; the global pass from colour alone; with two authored mattes (sky above the tree line, foliage below); the mattes themselves. On this picture the colour guess was already right, and the mattes made it worse: a sky band can't tell cloud from sky, so the clouds darken, and the feather leaves a haze at the horizon. Mattes earn their place where colour lies (the overcast sky in the browser test: 201 → 56), not here.</figcaption></figure>
+    <figure><img src="stills/infrared-ab-stone.jpg" alt=""><figcaption>No vegetation: the mossy stone cloister. The moss reads as foliage and goes pale. That's the limitation, shown, not hidden.</figcaption></figure>
+  </div>
+  <div class="cols">
+    <div class="block"><h3>Reusable</h3><p><code>infraredPass</code>: a red-heavy base, colour proxies for foliage and sky, explicit <code>regions</code> mattes with <code>maskWeight</code>, a shoulder that keeps leaf texture, a small glow ring, silver toning.</p></div>
+    <div class="block"><h3>Composition only</h3><p>The footage, the drift, and the order of arrival (strength, then sky, then foliage lift) through <code>tune</code>.</p></div>
+    <div class="block"><h3>Revisions</h3><p>The lift was too timid on the test card (130 → 150), so it got a small additive floor. Then the film's first take was a white sheet with black holes; the film now runs a lower lift, less exposure and more contrast, and the canopy keeps depth.</p></div>
+    <div class="block"><h3>Where it fails</h3><ul><li>It can't see near infrared. Moss, green paint and anything green-over-blue read as leaves; an overcast sky won't darken without a matte.</li><li>The footage is 1080p scaled up 1.5×; soft at 1440p.</li><li>Crude mattes can be worse than the guess: the field's sky band darkened its clouds.</li></ul></div>
+    <div class="block"><h3>Tests</h3><p>Browser (8): exact passthrough; foliage 130 → 199, sky 31, cloud 246; texture kept (92% at default, 55% at extreme lift); ramp monotone; matte lifts exactly where drawn, graded through the feather; a sky matte darkens an overcast sky 201 → 56; seeks; 26-42 ms per 1440p frame.</p></div>
+    <div class="block"><h3>Proposal</h3><p><span class="verdict">PROVISIONAL</span> The first to drop if kino must stay small.</p></div>
+  </div>
+</div></section>
+
+<section id="transmission"><div class="wrap">
+  <h2>Reliquary</h2>
+  <p class="lede">A stained-glass lancet in the niche of a dark crypt, seen only by the light passing through it. A band of daylight moves down the lancet behind the glass; only the panes it falls on come alive, and the lead cames stay black inside the light. It opens to the whole panel, then sinks away.</p>
+  <video src="../xp-transmission/reliquary.mp4" controls loop muted playsinline preload="metadata"></video>
+  <div class="meta"><span><b>compositions/xp-transmission</b></span><span>12 s · 24 fps</span><span>render 62 s</span><span>32 MB</span><span>A/B: ab/ab.html</span></div>
+  <div class="stills"><img src="stills/transmission-reliquary-01.50s.jpg" alt=""><img src="stills/transmission-reliquary-05.00s.jpg" alt=""><img src="stills/transmission-reliquary-08.50s.jpg" alt=""><img src="stills/transmission-reliquary-11.50s.jpg" alt=""></div>
+  <div class="ab">
+    <figure><img src="stills/transmission-ab-lights.jpg" alt=""><figcaption>The same density plate under the film's moving band and under a broad cool light from low left; then the naive version, the tinted panel screen-blended over the room: light paints over the cames and nothing is backlit.</figcaption></figure>
+    <figure><img src="stills/transmission-ab-photo.jpg" alt=""><figcaption>The maps themselves (density, tint); then a photograph as glass: as a negative (density = luma), as a positive slide (density = 1 − luma), and the slide under the moving band.</figcaption></figure>
+  </div>
+  <div class="cols">
+    <div class="block"><h3>Reusable</h3><p><code>transmissionComposite</code> (density, tint, backlight with gain, coverage, room, front reflection; opaque RGB out) and the pure <code>transmittance</code>.</p></div>
+    <div class="block"><h3>Composition only</h3><p>The lancet (quarries, medallions, grisaille, cames) drawn once as two maps, the moving band, the glow on the niche's splay, filmPass's halation for the panes' glow.</p></div>
+    <div class="block"><h3>Revisions</h3><p>Take one looked like vector clip-art and was too visible in the dark. Added uneven handblown glass, per-quarry hue, painted grisaille in the medallions, a darker sky behind, less front reflection, and the warm spill on the stone.</p></div>
+    <div class="block"><h3>Where it fails</h3><ul><li>The light on the room is authored, not computed from the glass.</li><li>The motif is generated, and still a little too clean and symmetrical to pass as old glass.</li></ul></div>
+    <div class="block"><h3>Tests</h3><p>Unit (1, several asserts) on <code>transmittance</code>. Browser (6): zero extinction passes the backlight; density attenuates monotonically and a came passes exactly e^−4; zero backlight is dark; red glass passes only red; coverage confines the plate; seeks.</p></div>
+    <div class="block"><h3>Proposal</h3><p><span class="verdict">KEEP</span> Refine next.</p></div>
+  </div>
+</div></section>
+
+<footer class="wrap">Report in prose: <code>research/visual-expansion-report.md</code>. Docs: <code>docs/primitives/digicam-pass.md</code>, <code>shutter.md</code>, <code>xerox.md</code>, <code>surface-project.md</code>, <code>infrared-pass.md</code>, <code>transmission.md</code>. Stills are remade from the renders by <code>research/expansion/stills.sh</code>.</footer>
+
+<div class="lightbox"><img alt=""></div>
+<script>
+  const buttons = document.querySelectorAll("nav button");
+  const show = (s) => {
+    buttons.forEach((b) => b.classList.toggle("on", b.dataset.s === s));
+    document.querySelectorAll("section").forEach((x) => x.classList.toggle("on", x.id === s));
+    document.body.dataset.s = s;
+    try { history.replaceState(null, "", "#" + s); } catch (e) {}
+  };
+  buttons.forEach((b) => (b.onclick = () => show(b.dataset.s)));
+  if (location.hash && document.getElementById(location.hash.slice(1))) show(location.hash.slice(1));
+  const lb = document.querySelector(".lightbox");
+  document.querySelectorAll(".stills img, .ab img").forEach((i) => (i.onclick = () => { lb.querySelector("img").src = i.src; lb.style.display = "flex"; }));
+  lb.onclick = () => (lb.style.display = "none");
+</script>
+</body>
+</html>

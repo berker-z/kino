@@ -36,6 +36,18 @@ Things we learned the hard way building the first scenes. Read this before writi
 
 **One HTML file with a composition id per project.** `hyperframes check` fails `multiple_root_compositions` if a second root-level HTML file has `data-composition-id`. Variants (the `xp-*/ab/ab.html` A/B pages) go in a subfolder and render with `-c ab/ab.html`.
 
+**A setup that throws inside a promise renders black, silently.** `hyperframes snapshot` and `render` don't report page errors; the frames just come out black. End every composition's setup with `.catch((e) => console.error(...))` and run `hyperframes check` first: its Runtime section prints console errors. (Two compositions in the expansion rendered black for this reason: a missing export, and a stale `vendor/kino.js`.) Debugging with `chrome --dump-dom --virtual-time-budget` is misleading here: image decoding stalls under virtual time.
+
+**A canvas can't paint anything brighter than white.** Summing a light over time (a long exposure, a bright window through glass) needs an explicit gain on that light, applied in linear light before the final clip. Without it a bulb's long-exposure trail is white divided among the samples: a grey smear. `shutterIntegrate`'s `glow` and `transmissionComposite`'s `gain` exist for this.
+
+**Light adds to a surface in proportion to what the surface reflects, not to how lit it already is.** Projecting onto a dimmed photo used the dim photo as albedo and the projection nearly vanished. Keep the daylight plate as the albedo and the dimmed one as the room.
+
+**Per-pixel noise that changes every frame defeats the encoder.** THE STAIRWELL's first render was 234 MB for 12 s with per-pixel luma noise; noise on a 1.4 px lattice reads the same at 1440p. Grain-like texture is the most expensive thing in a delivery file, so give it a size.
+
+**`pkill` from inside the sandbox doesn't reach processes started in another command.** A queue "stopped" that way kept rendering for 40 minutes. Don't queue heavy renders ahead of approval; there's then nothing to stop.
+
+**Stateless temporal effects cost one paint per sample.** A 64-sample shutter over a photographic scene took 32 minutes for 12 s on SwiftShader. Budget samples against the source's paint cost, and let the shutter close (one paint) when the piece doesn't need it.
+
 ## Borrowing from the HyperFrames registry
 
 `hyperframes catalog` lists about 390 blocks and components (Apache 2.0). Most are ads and UI mockups, but a few overlap with kino and their comments are worth reading: they cite measurements and hit the same seek problems we did. Read the source, take the idea, write our own version, and credit the item in the file header. So far: the beam velocity law (`oscilloscope-trace`), the foreignObject snapshot (`ordered-dither-pass`), the banded field (`halftone-field`).
@@ -78,6 +90,8 @@ Split in two on purpose. The global rules have held across every look so far. Th
 - Something has to move in every shot. Hard cuts between still full-bleed images read as "no motion, no effects, no layouts", even with a great treatment.
 - A sequence of designed pages with a transition between them reads as a slideshow, however good the pages are. The pieces that worked had continuous motion built into the concept.
 - Transitions need an intelligible mechanism: a sheet sliding in, a torn print, a glass lens. The water-drop ripple was the one he didn't like.
+- A material has to be obvious in an A/B at thumbnail size. Digicam's first defaults and filmPass's defaults both read as "the same" as raw next to each other; digicam got fried, and A/Bs now show filmPass with a real piece's settings.
+- No glowing light bars riding a wipe: the photocopier's scan lamp sweeping each new copy in (THE TESTAMENT) was hated. A plain edge carries the same mechanism.
 - Whole words and lines, wiped in on beats. Not one letter per beat.
 - Reveals need a rule you can read. Shuffled slabs assembling a word were "too random"; the same word drafted in construction order (guides, stems, bars, curves) was loved. Derive the order from the thing's own structure.
 - To prove a look, run it on new material in a short piece with music. Matching the reference's own frames convinces nobody.

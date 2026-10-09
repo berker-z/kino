@@ -83,3 +83,15 @@ export type {TimeSource, Strip, TemporalScanOptions} from "./arrange/temporal-sc
 // Passes (later additions)
 export {filmPass, filmDefaults, gateWeave, thresholdFilter} from "./passes/film-pass";
 export type {FilmPassOptions, FilmSettings, FilmPainter} from "./passes/film-pass";
+export {digicamPass, digicamDefaults} from "./passes/digicam-pass";
+export type {DigicamPassOptions, DigicamSettings, DigicamPainter} from "./passes/digicam-pass";
+export {shutterIntegrate, exposureSamples} from "./arrange/shutter";
+export type {ShutterIntegrate, ShutterOptions, ShutterSource, ExposureOptions, ExposureSample} from "./arrange/shutter";
+export {copyGenerations, copyStep, copyDefaults, densityOf, densityCanvas} from "./sources/xerox";
+export type {CopyOptions, CopyGenerationsOptions} from "./sources/xerox";
+export {surfaceProject, squareToQuad, invert3, applyHomography, assertQuad} from "./arrange/surface-project";
+export type {SurfaceProject, SurfaceProjectOptions, Quad, Point, Mat3} from "./arrange/surface-project";
+export {infraredPass, infraredDefaults} from "./passes/infrared-pass";
+export type {InfraredPassOptions, InfraredSettings, InfraredPainter} from "./passes/infrared-pass";
+export {transmissionComposite, transmittance} from "./arrange/transmission";
+export type {Transmission, TransmissionOptions} from "./arrange/transmission";

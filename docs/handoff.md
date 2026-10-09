@@ -29,6 +29,10 @@ Built from `KINO_NEXT_VISUAL_LANGUAGES.md`: `compositions/xp-darkroom` (THE SILE
 
 Later the same day: the type reveal became construction order (loved), a footage slit-scan demo (`xp-temporal-footage`), and a second darkroom piece without a figure (`xp-darkroom-elevations`, self-mattes; take one with side-by-side panels read as a layout). Then the working method changed: **`docs/arsenal.md` is the living list of moves, and the `direct` skill turns Berker's ideas into combinations from it.** Keep the arsenal updated in the same change as any new primitive, composition or verdict (rule in CLAUDE.md, AGENTS.md links to it).
 
+## 2026-10-09 (evening): six operations
+
+Built from `KINO_VISUAL_EXPANSION_MASTER_SPEC.md`: `digicamPass` (THE STAIRWELL, `xp-digicam`), `shutterIntegrate` (AFTERIMAGE, `xp-shutter`), `copyGenerations` (THE TESTAMENT, `xp-xerox`), `surfaceProject` (SANCTUARY, `xp-projection`), `infraredPass` (WHITE ORCHARD, `xp-infrared`), `transmissionComposite` (RELIQUARY, `xp-transmission`). Each has `ab/ab.html`, a primitive doc, tests and an arsenal entry marked provisional. Results and verdict proposals: `examples/expansion/index.html` and `research/visual-expansion-report.md`. Waiting on Berker's verdicts; nothing promoted to a look. Plates come from Commons via `scripts/commons.py fetch compositions/<name>` (each has `plates.txt`); footage frames are noted in `credits-extra.txt`.
+
 Photo note: Berker doesn't want the Kutia Kondh portrait (`portrait.jpg` in dither-lab/research) used again.
 
 ## Machine notes

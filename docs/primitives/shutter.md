@@ -18,7 +18,7 @@ A canvas can't paint anything brighter than white. A real bulb is hundreds of ti
 
 ## Cost
 
-Stateless means expensive: every frame paints the source (and glow) once per sample. The browser test measures 59 / 176 / 645 ms per 1280×720 frame at 4 / 16 / 64 samples on SwiftShader (CPU), roughly linear. AFTERIMAGE at 2560×1440 with 64 samples, a plate, a moving light pool and a glow layer per sample rendered in 32 minutes for 12 s (one worker). Cheap sources, fewer samples, or a reduced-resolution glow layer are the levers; nothing is cached across frames on purpose.
+Stateless means expensive: every frame paints the source (and glow) once per sample. The browser test measures 59 / 176 / 645 ms per 1280×720 frame at 4 / 16 / 64 samples on SwiftShader (CPU), roughly linear. AFTERIMAGE at 2560×1440 with 64 samples, a plate, a moving light pool and a glow layer per sample rendered in 32 minutes for 12 s (one worker); 38 minutes the second time, sharing the machine with other renders. Cheap sources, fewer samples, or a reduced-resolution glow layer are the levers; nothing is cached across frames on purpose.
 
 ## What it doesn't do
 

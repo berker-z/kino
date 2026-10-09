@@ -16,15 +16,17 @@ Keep it true. In the same change that adds or changes a primitive, proves a new 
 src/                 TypeScript library, bundled to window.Kino
   runtime/           timeDriver (seek-safe per-frame callback), whenReady (CSS + fonts), getGsap
   signals/           beatMap, beatTicks, tickAt, bandEnergy, bassFollower, decodeSamples, autoGain
-  sources/           preparePlate, sunprint, htmlPlate, painters, spectrumFeed, networkTree, pen, beam, teletext, canvas type
-  arrange/           sheetCamera, printRun, registerDrift, printStrip, tornWipe, lensPass
-  passes/            screenPass (ramp / grille / lens / colour mode), risoPass (two-ink print), ditherPass (2-4 tone ordered dither), ditherCanvas
+  sources/           preparePlate, sunprint, htmlPlate, painters, spectrumFeed, networkTree, pen, beam, teletext, canvas type, copyGenerations
+  arrange/           sheetCamera, printRun, registerDrift, printStrip, tornWipe, lensPass, doubleExposure, temporalScan, shutterIntegrate, surfaceProject, transmissionComposite
+  passes/            screenPass (ramp / grille / lens / colour mode), risoPass (two-ink print), ditherPass (2-4 tone ordered dither), ditherCanvas, filmPass, digicamPass, infraredPass
   looks/             MotionAesthetic bundles: cyanotype, blueprint, phosphor, riso, signalDither, ... (teletextTV is a one-off joke, not a core look)
   dom/               first-era GSAP + CSS pieces (motion, heroTitle, heroReveal, grain, crt...)
 scripts/build.mjs    bundles src/ and copies kino.js, gsap, fonts into every compositions/*/vendor/
 scripts/spectrum.py  per-frame spectrum of an audio file -> JSON or window.<NAME> JS
 scripts/samples.py   raw waveform samples (int8, base64) -> window.<NAME> JS
 scripts/dither.py    dither a photo or footage file (same settings as ditherPass, plus FS with hysteresis)
+scripts/commons.py   fetch a composition's Commons plates (its plates.txt) and write assets/CREDITS.txt
+scripts/stills.sh    pull exact frames from a render as JPEG stills
 compositions/        each is a standalone HyperFrames project (index.html + assets/)
 research/            teardowns and experiments (reports + scripts; media/ is gitignored)
 tools/dither/        the dither playground: `npm run playground`, then http://127.0.0.1:8077/tools/dither/

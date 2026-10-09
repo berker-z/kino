@@ -29,7 +29,7 @@ No default green night-vision, no reticle, no scanlines, no noise.
 
 ## Cost
 
-One shader, 9 evaluations of the IR function per pixel (centre plus the glow ring). 26-42 ms per 2560×1440 frame including a simple painter on SwiftShader.
+One shader, 9 evaluations of the IR function per pixel (centre plus the glow ring). 26-42 ms per 2560×1440 frame including a simple painter on SwiftShader. WHITE ORCHARD rendered in 73 s; the file is 133 MB, because a whole frame of moving leaves is the hardest thing to compress, not because of the pass.
 
 ## Tests
 

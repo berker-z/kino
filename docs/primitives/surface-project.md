@@ -36,7 +36,7 @@ The first content was slow ocean footage. Dark, low-contrast water gave too litt
 
 ## Cost
 
-One shader, four textures (surface, content, occlusion, albedo), uploaded each frame. 362 ms per 2560×1440 frame on SwiftShader in the browser test, most of it uploads. GPU memory: three 2560×1440 RGBA8 textures (14.7 MB each) and a 1280×720 content texture (3.7 MB).
+One shader, four textures (surface, content, occlusion, albedo), uploaded each frame. 362 ms per 2560×1440 frame on SwiftShader in the browser test, most of it uploads. GPU memory: three 2560×1440 RGBA8 textures (14.7 MB each) and a 1280×720 content texture (3.7 MB). SANCTUARY, with filmPass after it, rendered in 197 s (72 MB).
 
 ## Tests
 

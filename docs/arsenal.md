@@ -71,6 +71,36 @@ One per piece. It's the pass the whole frame goes through, so it sets the surfac
 - seen: dither-lab, the A/Bs of all three language pieces.
 - still: examples/languages/stills/darkroom-ab-04.50s.jpg
 
+**Digital flash** (`digicamPass`)
+- what: a cheap late-2000s digital camera: highlights clip hard into a cool lavender white, shadows crush to blue-black, a tight cold bloom, colour fringes at the frame edges, sharpening halos, faint shadow noise that never touches true black.
+- feels: hostile, intimate, cold, cheap; a picture found on a forgotten SD card.
+- needs: an authored flash. The pass is the camera's response, not the light: matte the subject, push its gain so it clips, drop the room, offset the subject's silhouette as a hard shadow. On a bright evenly lit room the same settings only give a cold cheap snapshot.
+- pairs: shutter drag (AFTERIMAGE), close awkward crops, slow push, no text.
+- avoid: large saturated graphics (the bloom washes them pastel); per-pixel noise at full strength (the first render was 234 MB; luma noise is now on a 1.4 px lattice); flash pulses.
+- seen: xp-digicam (THE STAIRWELL), xp-shutter.
+- status: provisional. First defaults were "lowkey the same" as raw; fried (camera curve, oversaturation, harder clip, halos, JPEG chroma blocks). No verdict on the fried version yet.
+- still: examples/expansion/stills/digicam-the-stairwell-06.00s.jpg
+
+**False infrared** (`infraredPass`)
+- what: black and white through a deep red filter, then leaves lifted pale and luminous and clear sky pushed to black, a small glow, silver toning. A guess from colour; explicit foliage and sky mattes (`regions`) when the guess fails.
+- feels: quiet, spectral, uncanny; daylight that looks like a dream's negative.
+- needs: foliage and clear blue sky in the picture. Green paint and mossy stone read as leaves; an overcast sky won't darken without a matte. It cannot see real near infrared.
+- pairs: footage with wind in it, slow lateral drift, the emergence order colour, red filter, infrared.
+- avoid: heavy lift (the first take was a white sheet with black holes); green night-vision anything.
+- seen: xp-infrared (WHITE ORCHARD).
+- status: provisional, no verdict yet.
+- still: examples/expansion/stills/infrared-white-orchard-10.00s.jpg
+
+**Photocopy** (`copyGenerations`, a precompute)
+- what: a sheet copied and the copy copied: greys collapse, ink spreads, fine print fattens and closes up, dashed lines vanish, solids go dirty in the middle, specks near edges, the machine's streaks recurring. Big forms survive longest.
+- feels: abrasive, underground, evidential; a manifesto passed hand to hand.
+- needs: a still sheet (type, a drawing, a dark photo), computed once and moved as a plate; it is not a per-frame pass.
+- pairs: a camera travelling over the sheet, each new copy arriving down the sheet behind a plain edge, crisp counters above the page.
+- avoid: a glowing copier light bar riding the edge (rejected: "I sort of hate the white light thing"); expecting it on moving footage (dirt would boil); confusing it with dither or riso.
+- seen: xp-xerox (THE TESTAMENT).
+- status: provisional. The light bar was rejected and removed; no verdict on the rest yet.
+- still: examples/expansion/stills/xerox-the-testament-11.50s.jpg
+
 **None**
 - Plain canvas is a material too. Type pieces and clean diagrams often want nothing over them.
 - seen: xp-typesetting, xp-temporal-scan.
@@ -102,6 +132,26 @@ One per piece. It's the pass the whole frame goes through, so it sets the surfac
 - seen: xp-darkroom.
 - still: examples/languages/stills/darkroom-the-silent-city-11.50s.jpg
 
+**Projection** (`surfaceProject`)
+- what: a picture thrown by a projector onto a flat wall in a photographed room, in perspective (four authored corners), as light added in proportion to the stone's albedo. Black adds nothing. Columns in the beam cast authored shadows.
+- feels: cinematic, restrained, sacred-ish; an image entering matter.
+- needs: a photographed room with a big plane in perspective, a daylight version of it for albedo, and bright projection content with linework (dark, low-contrast footage reads as a stain).
+- pairs: dimmed rooms, slow pushes that carry the quad with the room, film with warm halation.
+- avoid: non-planar surfaces (out of scope); rectangles laid over a photo (the naive A/B shows why).
+- seen: xp-projection (SANCTUARY).
+- status: provisional, no verdict yet.
+- still: examples/expansion/stills/projection-sanctuary-09.50s.jpg
+
+**Transmitted light** (`transmissionComposite`)
+- what: a picture that exists only as matter light passes through: density and tint maps lit from behind, `backlight · exp(-extinction · density)`. Move the light and the picture changes; lead cames stay black inside it.
+- feels: austere, numinous, slightly anatomical; glass negatives, lancets, lantern slides.
+- needs: a density plate (white dense, black clear), optionally a tint map, and a light that moves. A dark room around it.
+- pairs: a band of light travelling down the plate, film's warm halation for the glow, slow pushes.
+- avoid: screen-blending a picture over light (light paints over the leads; see the A/B).
+- seen: xp-transmission (RELIQUARY).
+- status: provisional, no verdict yet.
+- still: examples/expansion/stills/transmission-reliquary-08.50s.jpg
+
 ## Time
 
 **Slit-scan** (`temporalScan`)
@@ -112,6 +162,16 @@ One per piece. It's the pass the whole frame goes through, so it sets the surfac
 - avoid: weak motion (it does nothing); showing it without a reference (first-time viewers need the source inset or a span-0 opening).
 - seen: xp-temporal-scan (procedural), xp-temporal-footage (horses).
 - still: examples/languages/stills/temporal-footage-04.80s.jpg
+
+**Shutter drag** (`shutterIntegrate`)
+- what: one frame exposed over a shutter interval with a flash inside it: everything lit by ambient light piles up into trails, the flash freezes the subject sharp. Lights brighter than white go in `glow` with a gain, so their streaks saturate.
+- feels: nocturnal, haunted, intimate; the present pinned on top of its own recent past.
+- needs: one strong moving subject with a readable path, a source that is a pure function of time, and patience: cost is one source paint per sample (AFTERIMAGE took 32 minutes for 12 s).
+- pairs: digital flash on top, dark passages, a shutter that opens and closes over the piece.
+- avoid: confusing it with slit-scan or a blur filter; too few samples on a sharp light (beads, not a streak).
+- seen: xp-shutter (AFTERIMAGE).
+- status: provisional, no verdict yet.
+- still: examples/expansion/stills/shutter-afterimage-07.50s.jpg
 
 ## Sources: things that draw
 
