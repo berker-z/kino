@@ -66,7 +66,19 @@ Some arrangements are still inside their compositions because they belong to one
 | `ditherCanvas` | one grayscale canvas | 1-bit or smooth two-colour (the first waves video; prefer `ditherPass`) |
 
 ### `looks/`: bundles
-A look (`MotionAesthetic`) carries a palette, fonts, motion grammar, and the settings for its pass in `texture.screen` or `texture.riso`. Spread those into the pass:
+A look is a curated combination of three things that are independent underneath:
+
+| | owns | where it lives |
+|---|---|---|
+| **Material** | what the picture is made of: ink, phosphor, cyanotype, dither | a pass and its settings, `look.texture.screen` / `texture.riso` |
+| **Motion grammar** | timing, cuts, drifts, reveals, camera behaviour | arrangement primitives (`sheetCamera`, `printRun`, `printStrip`, `tornWipe`...) chosen by the composition |
+| **Composition** | content, spatial structure, sequencing | the composition's own code |
+
+Only the material is carried by the look object today. For the DOM hero scenes the `MotionAesthetic` type also drives entrances and layout (`motion`, `layout`, `spacing`), but no canvas piece reads those fields: canvas looks get their grammar from the arrangements the composition picks. That's deliberate for now (see `ARCHITECTURE_AUDIT.md`, finding 7). A typed motion grammar gets added when code first needs to read one from a look.
+
+The three are swappable. The `compositions/xp-*` experiments mix them across looks with no library changes: blueprint's pen drawings under the cyanotype material, once with blueprint's sheet camera and once with cyanotype's own grammar (a contact strip, a torn print, a slow push); and teletext pages under blueprint's sheet camera.
+
+Spread a look's material into its pass:
 
 ```js
 Kino.screenPass(stage, tl, {width, height, duration, fps, paint, ...Kino.blueprint.texture.screen});

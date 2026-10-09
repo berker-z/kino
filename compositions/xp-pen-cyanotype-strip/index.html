@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=2560, height=1440" />
+    <link rel="stylesheet" href="vendor/fonts.css" />
+    <script src="vendor/gsap.min.js"></script>
+    <script src="vendor/kino.js"></script>
+    <style>
+      html, body { margin: 0; width: 2560px; height: 1440px; overflow: hidden; background: #000; }
+      #root { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="8" data-width="2560" data-height="1440" data-fps="30">
+      <div id="stage" class="clip" data-start="0" data-duration="8" data-track-index="0"></div>
+    </div>
+    <script>
+      // Experiment A2 (ARCHITECTURE_AUDIT.md): all three ingredients from
+      // different places. Source: blueprint's pen kit. Material: the
+      // cyanotype screen. Motion grammar: cyanotype's own (a contact strip
+      // at constant speed, a torn-print wipe, a slow push), not blueprint's
+      // sheet camera. Glue is marked GLUE.
+      const W = 2560, H = 1440, DURATION = 8, FPS = 30;
+      const P = Kino.pen;
+      const prog = Kino.progress;
+
+      // Four small drawings, each drawn in a CW x CH card at progress p.
+      const CW = 860, CH = 600;
+      const drawings = [
+        (c, p) => { // a dish in elevation
+          const pts = Array.from({ length: 31 }, (_, i) => { const u = i / 15 - 1; return [430 + u * 300, 200 + u * u * 110]; });
+          P.polyP(c, pts, prog(p, 0, 0.4));
+          P.lineP(c, 130, 310, 730, 310, prog(p, 0.3, 0.2));
+          P.lineP(c, 230, 280, 430, 60, prog(p, 0.4, 0.2)); P.lineP(c, 630, 280, 430, 60, prog(p, 0.45, 0.2));
+          P.polyP(c, [[380, 310], [350, 540], [510, 540], [480, 310]], prog(p, 0.55, 0.25));
+          P.dim(c, 130, 380, 730, 380, "64 M", prog(p, 0.75, 0.25));
+        },
+        (c, p) => { // a gear with hatching
+          const teeth = Array.from({ length: 49 }, (_, i) => { const a = (i / 48) * Math.PI * 2, r = i % 4 < 2 ? 210 : 180; return [430 + Math.cos(a) * r, 300 + Math.sin(a) * r]; });
+          P.polyP(c, teeth, prog(p, 0, 0.5));
+          P.ellipseP(c, 430, 300, 70, 70, prog(p, 0.4, 0.2));
+          const ring = new Path2D(); ring.arc(430, 300, 150, 0, Math.PI * 2); ring.arc(430, 300, 70, 0, Math.PI * 2, true);
+          c.lineWidth = 2; P.hatch(c, ring, [280, 150, 300, 300], prog(p, 0.55, 0.4), 18); c.lineWidth = 4;
+        },
+        (c, p) => { // a waveform with axes
+          P.lineP(c, 80, 300, 780, 300, prog(p, 0, 0.2)); P.lineP(c, 80, 80, 80, 520, prog(p, 0.1, 0.2));
+          const wave = Array.from({ length: 141 }, (_, i) => [80 + i * 5, 300 - Math.sin(i / 9) * 150 * Math.exp(-i / 120)]);
+          P.polyP(c, wave, prog(p, 0.25, 0.55));
+          P.dim(c, 800, 150, 800, 450, "2 V", prog(p, 0.8, 0.2));
+        },
+        (c, p) => { // a speaker in section
+          P.polyP(c, [[250, 120], [500, 220], [500, 380], [250, 480]], prog(p, 0, 0.35), true);
+          P.rectP(c, 500, 230, 130, 140, prog(p, 0.3, 0.25));
+          const mag = new Path2D(); mag.rect(500, 230, 130, 140);
+          c.lineWidth = 2; P.hatch(c, mag, [500, 230, 130, 140], prog(p, 0.5, 0.3), 16); c.lineWidth = 4;
+          P.balloon(c, 560, 230, 720, 110, 1, prog(p, 0.75, 0.25));
+        },
+      ];
+      const labels = ["RECEIVER", "GEAR TRAIN", "DAMPED SIGNAL", "DRIVER"];
+
+      // GLUE: printStrip draws pre-rendered prints. To keep the drawings
+      // drafting themselves while they slide, redraw each card's canvas
+      // every frame before the strip paints it (it reads them at paint time).
+      const cards = drawings.map(() => { const c = document.createElement("canvas"); c.width = CW; c.height = CH; return c; });
+      function redrawCards(t) {
+        cards.forEach((card, i) => {
+          const c = card.getContext("2d");
+          c.fillStyle = "#000"; c.fillRect(0, 0, CW, CH);
+          c.strokeStyle = "#f2f2f2"; c.lineWidth = 4; c.lineCap = c.lineJoin = "round"; // GLUE: pen kit uses the caller's stroke style
+          c.globalAlpha = 0.5; c.lineWidth = 2; P.rectP(c, 10, 10, CW - 20, CH - 20, 1); c.globalAlpha = 1; c.lineWidth = 4;
+          drawings[i](c, prog(t, 0.2 + i * 0.5, 2.2));
+        });
+      }
+      const strip = Kino.printStrip({ prints: cards, labels, x: 1500, y: 380, gap: 90, pxPerFrame: -14, fps: FPS, frameWidth: W, ink: "#f2f2f2" });
+      const stripScene = (ctx, t) => {
+        ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+        redrawCards(t);
+        strip(ctx, t);
+        Kino.caption(ctx, "FIG. 01-04   DRAWN, NOT PRINTED", 156, 150, { ink: "#f2f2f2" });
+      };
+      // Scene 2: the dish full frame under a slow, constant push.
+      const big = document.createElement("canvas"); big.width = CW; big.height = CH;
+      const detailScene = (ctx, t) => {
+        ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+        const b = big.getContext("2d");
+        b.fillStyle = "#000"; b.fillRect(0, 0, CW, CH);
+        b.strokeStyle = "#f2f2f2"; b.lineWidth = 4; b.lineCap = b.lineJoin = "round";
+        drawings[0](b, prog(t, 4.0, 2.4));
+        const z = 2.6 + 0.05 * (t - 4); // constant-speed push, cyanotype's grammar
+        ctx.save();
+        ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-CW / 2, -CH / 2 + 20);
+        ctx.drawImage(big, 0, 0);
+        ctx.restore();
+        Kino.wipeText(ctx, "RECEIVER", { x: 156, y: 1300, size: 150, progress: prog(t, 5.6, 0.6) });
+      };
+
+      Kino.whenReady(Kino.cyanotype).then(() => {
+        const TEAR = 0.9;
+        function paint(ctx, t) {
+          if (t < 4) return stripScene(ctx, t);
+          if (t < 4 + TEAR) return Kino.tornWipe(ctx, stripScene, detailScene, t, (t - 4) / TEAR, { width: W, height: H, seed: 7 });
+          detailScene(ctx, t);
+        }
+        const tl = gsap.timeline({ paused: true });
+        Kino.screenPass(document.getElementById("stage"), tl, { width: W, height: H, duration: DURATION, fps: FPS, paint, ...Kino.cyanotype.texture.screen });
+        window.__timelines["main"] = tl;
+      });
+    </script>
+  </body>
+</html>
