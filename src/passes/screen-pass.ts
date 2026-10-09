@@ -183,15 +183,17 @@ vec3 screenAt(vec2 px, float shift) {
     // Narrow dark gaps between wide bright stripes: gap peaks at the stripe
     // boundary and is ~0 across most of the stripe. 0.3125 is its mean, so
     // the mask averages to 1 and the picture keeps its brightness.
-    float c = 0.5 - 0.5 * cos(6.2831853 * px.x / pitch);
-    float gap = c * c * c;
+    // (Named phase, not c: an inner "float c" here once shadowed the colour
+    // and silently turned the whole grille into a no-op.)
+    float phase = 0.5 - 0.5 * cos(6.2831853 * px.x / pitch);
+    float gap = phase * phase * phase;
     // Beads: the bright stripe is beaded (phosphor slots), staggered on
     // alternate columns; the dark gaps stay continuous lines.
     float bead = 0.5 - 0.5 * cos(6.2831853 * (px.y / (pitch * 0.5) + 0.5 * mod(col, 2.0)));
     // Fibre: per-column, per-bead jitter so stripes aren't machine-perfect.
     float fib = hash(vec2(col, floor(px.y / (pitch * 0.5)))) - 0.5;
     float amp = grille * (1.0 - 0.85 * smoothstep(0.45, 0.95, l));
-    float stripe = 3.2 * (0.3125 - gap) - beads * (1.0 - c) * (bead - 0.5) * 2.0;
+    float stripe = 3.2 * (0.3125 - gap) - beads * (1.0 - phase) * (bead - 0.5) * 2.0;
     float mask = 1.0 + amp * stripe + 0.1 * grille * fib;
     c *= mask;
   }

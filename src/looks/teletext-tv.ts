@@ -46,6 +46,10 @@ export const teletextTV: MotionAesthetic = {
     vignette: 0,
     glow: 0,
     grid: "none",
-    screen: {colorMode: true, grille: 0.45, beads: 0.3, curve: 0.045, curveY: 0.035, softness: 1.8, edgeBlur: 3, fringe: 3, bloom: 0.3, grain: 0.15},
+    // grille 0: the teletext piece was approved while a shader bug made the
+    // grille a no-op. With the bug fixed, 0.45 gives a visible shadow-mask
+    // slot pattern; turn it back on deliberately, after looking at it
+    // (research/audit/media/tt-ab.png).
+    screen: {colorMode: true, grille: 0, beads: 0.3, curve: 0.045, curveY: 0.035, softness: 1.8, edgeBlur: 3, fringe: 3, bloom: 0.3, grain: 0.15},
   },
 };
