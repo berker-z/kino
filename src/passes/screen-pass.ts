@@ -133,6 +133,11 @@ uniform vec2 res;
 uniform float pitch, grille, beads, curve, softness, edgeBlur, edgeFalloff, fringe, bloom, grain, time;
 uniform float rippleX, rippleY, rippleAge, rippleAmp, lensX, lensY, lensR, lensK;
 uniform float colorMode, curveY;
+// Two stages, one program. Stage 0 renders the gridded screen once per pixel
+// (both fringe samples) into an intermediate texture; stage 1 blurs that.
+// Evaluating the screen inside every blur tap was 98% of the frame time.
+uniform float stage;
+uniform sampler2D scr;
 
 // Where the picture is read from: the screen position bent by the ripple and
 // the lens. The grille is not bent; it belongs to the screen.
@@ -202,6 +207,19 @@ vec3 screenAt(vec2 px, float shift) {
 }
 
 void main() {
+  if (stage < 0.5) {
+    // The screen at this pixel, laid out like src (row 0 at v = 0), so stage 1
+    // reads it with the same coordinates it would pass to screenAt.
+    vec2 sp = uv * res;
+    float sx = sp.x / res.x * 2.0 - 1.0;
+    float sfr = fringe * (0.6 + 0.8 * pow(abs(sx), edgeFalloff));
+    vec3 s0 = screenAt(sp, 0.0);
+    vec3 s1 = screenAt(sp, sfr);
+    // Ramp mode keeps luminance per channel for the ramp lookup; colour mode
+    // keeps the source colours. Green comes from the shifted sample.
+    color = colorMode > 0.5 ? vec4(s0.r, s1.g, s0.b, 1.0) : vec4(dot(s0, LUMA), dot(s1, LUMA), dot(s0, LUMA), 1.0);
+    return;
+  }
   vec2 px = vec2(uv.x, 1.0 - uv.y) * res;
   // Camera-side curvature: a cylinder, so only x bends.
   float cx = px.x / res.x * 2.0 - 1.0;
@@ -213,7 +231,6 @@ void main() {
   // Focus: sharp in a center column, soft toward left/right.
   float side = pow(abs(cx), edgeFalloff);
   float r = softness + edgeBlur * side;
-  float fr = fringe * (0.6 + 0.8 * side);
 
   // Golden-angle disc blur; each tap reads the gridded screen, so the grille
   // itself goes soft where focus drops, which is what the reference does.
@@ -225,13 +242,9 @@ void main() {
     float rr = r * sqrt((fi + 0.5) / float(TAPS));
     float a = fi * 2.39996323;
     vec2 o = vec2(cos(a), sin(a)) * rr;
-    // Green displaced right of red/blue: magenta on a white glyph's left
-    // edge, green on its right edge.
-    vec3 a0 = screenAt(q + o, 0.0);
-    vec3 a1 = screenAt(q + o, fr);
-    // Ramp mode keeps luminance per channel for the ramp lookup below;
-    // color mode keeps the source colors.
-    acc += colorMode > 0.5 ? vec3(a0.r, a1.g, a0.b) : vec3(dot(a0, LUMA), dot(a1, LUMA), dot(a0, LUMA));
+    // The screen from stage 0: green already displaced right of red/blue
+    // (magenta on a white glyph's left edge, green on its right).
+    acc += texture(scr, (q + o) / res).rgb;
     wsum += 1.0;
   }
   vec3 l = acc / wsum;
@@ -314,11 +327,27 @@ export function screenPass(container: HTMLElement, timeline: gsap.core.Timeline,
     for (let c = 0; c < 3; c++) lut[i * 4 + c] = Math.round(stops[a][c] * (1 - f) + stops[b][c] * f);
     lut[i * 4 + 3] = 255;
   }
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, rampTex);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, lut);
+  // Created after the ramp upload, which uploads into whatever is bound.
+  // The intermediate screen (stage 0's output). Half float when it's
+  // renderable, so the grille's above-1 highlights survive into the blur the
+  // way they did when every tap evaluated the screen itself.
+  const scrTex = linearTexture(gl, 2);
+  const halfFloat = !!gl.getExtension("EXT_color_buffer_float");
+  gl.texImage2D(gl.TEXTURE_2D, 0, halfFloat ? gl.RGBA16F : gl.RGBA8, w, h, 0, gl.RGBA, halfFloat ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE, null);
+  const fbo = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, scrTex, 0);
+  if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error("screenPass: the intermediate framebuffer is incomplete");
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
   const u = (name: string) => gl.getUniformLocation(prog, name);
   gl.uniform1i(u("src"), 0);
   gl.uniform1i(u("ramp"), 1);
+  gl.uniform1i(u("scr"), 2);
+  const uStage = u("stage");
   gl.uniform1f(u("colorMode"), colorMode ? 1 : 0);
   gl.uniform2f(u("res"), w, h);
   const base: ScreenSettings = {
@@ -343,6 +372,17 @@ export function screenPass(container: HTMLElement, timeline: gsap.core.Timeline,
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
     if (options.tune) apply({...base, ...options.tune(t)});
     gl.uniform1f(uTime, frame % 997);
+    // Stage 0 into the intermediate. Its texture is unbound meanwhile: a
+    // texture can't be sampled and rendered to in the same draw.
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.uniform1f(uStage, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    // Stage 1: blur, bloom, grain and ramp, to the canvas.
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindTexture(gl.TEXTURE_2D, scrTex);
+    gl.uniform1f(uStage, 1);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   });
 
