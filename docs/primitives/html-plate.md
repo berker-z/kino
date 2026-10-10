@@ -23,5 +23,5 @@ The markup goes into an SVG `<foreignObject>`, the SVG is loaded as an image, an
 
 ## Labs
 
-- `compositions/html-lab`: an editorial page (masthead, balanced headline, three columns, a table) through the cyanotype screen.
-- `compositions/riso-lab`: a page printed in pink over `paint.flowField` in blue.
+- `lab/html-lab`: an editorial page (masthead, balanced headline, three columns, a table) through the cyanotype screen.
+- `lab/riso-lab`: a page printed in pink over `paint.flowField` in blue.

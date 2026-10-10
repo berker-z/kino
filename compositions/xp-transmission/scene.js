@@ -1,6 +1,6 @@
 // RELIQUARY: a stained-glass lancet in the niche of a dark crypt, seen only
 // by the light that passes through it. Phase 6 of the visual expansion
-// (KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
+// (docs/briefs/KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
 //
 // The room is a photograph (the crypt of Saint-Marcouf), brought down to
 // near darkness. The lancet is drawn here once, as two maps for

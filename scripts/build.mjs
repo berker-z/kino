@@ -1,6 +1,6 @@
 // Bundles src/ into one browser script and drops it, plus GSAP and the
-// fonts from src/tokens/fonts.json, into every composition's vendor/
-// directory.
+// fonts from src/tokens/fonts.json, into the vendor/ directory of every
+// composition in compositions/, lab/ and attic/.
 //
 // Compositions are standalone HyperFrames projects: the preview server and
 // renderer only see files inside the composition directory, so the library
@@ -15,7 +15,7 @@ import {copyFileSync, mkdirSync, readdirSync, existsSync, readFileSync, writeFil
 import {join} from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
-const compositionsDir = join(root, "compositions");
+const compositionDirs = ["compositions", "lab", "attic"].map((dir) => join(root, dir));
 const outfile = join(root, "dist", "kino.js");
 const gsapFile = join(root, "node_modules", "gsap", "dist", "gsap.min.js");
 const fontsFile = join(root, "src", "tokens", "fonts.json");
@@ -36,9 +36,13 @@ function fontFaces() {
 }
 
 function compositions() {
-  return readdirSync(compositionsDir, {withFileTypes: true})
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => join(compositionsDir, entry.name))
+  return compositionDirs
+    .filter((parent) => existsSync(parent))
+    .flatMap((parent) =>
+      readdirSync(parent, {withFileTypes: true})
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => join(parent, entry.name)),
+    )
     .filter((dir) => existsSync(join(dir, "index.html")));
 }
 

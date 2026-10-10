@@ -5,6 +5,8 @@ dist/
 vendor/
 /audio/
 compositions/*/assets/
+lab/*/assets/
+attic/*/assets/
 examples/future-of-speech/
 examples/waves-test/
 *.mp4

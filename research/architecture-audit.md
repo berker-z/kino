@@ -1,6 +1,6 @@
 # Kino architecture audit
 
-**Date:** 2026-10-09 · **Brief:** `KINO_ARCHITECTURE_REVIEW.md` (reviewed `5f8e073`) · **Audited at:** `a320219` (the brief's baseline plus the dither tool) · **Work since:** `3be5f85`..`41249ca`, all local, not pushed.
+**Date:** 2026-10-09 · **Brief:** `docs/briefs/KINO_ARCHITECTURE_REVIEW.md` (reviewed `5f8e073`) · **Audited at:** `a320219` (the brief's baseline plus the dither tool) · **Work since:** `3be5f85`..`41249ca`, all local, not pushed.
 
 Every claim in the brief was checked against the code before anything was changed. Each finding below says whether it was **confirmed**, **refuted** or **open**, what the evidence is, and what happened. Phases 0 and 1 are done; from Phase 2 the contract table, the luma fix and both cross-composition experiments are done; from Phase 3 one extraction (timing helpers); from Phase 4 the measured screenPass optimisation (2.2-2.5x) and the smoke path. Phase 5 (teardown PROMOTE) is blocked on a permission, see finding 13.
 
@@ -129,7 +129,7 @@ The first attempt rendered black: the new intermediate texture was bound before 
 
 ### 11. Toolchain and smoke path (partly fixed)
 
-`compositions/smoke` needs no audio, photos or dotfiles: a synthetic card through all three passes. `scripts/smoke.sh` runs typecheck, tests, build, `hyperframes check` (passes), snapshot, and the grille check. It still needs the Nix-packaged hyperframes and a WebGL2-capable headless Chrome, documented in the script header. Tool behaviours kept distinct from composition failures: `hyperframes snapshot` segfaults on exit after writing its frames (judged by files), and `hyperframes check` crashed once on screen-test in an earlier session; it passes on smoke and wasn't reproduced.
+`lab/smoke` needs no audio, photos or dotfiles: a synthetic card through all three passes. `scripts/smoke.sh` runs typecheck, tests, build, `hyperframes check` (passes), snapshot, and the grille check. It still needs the Nix-packaged hyperframes and a WebGL2-capable headless Chrome, documented in the script header. Tool behaviours kept distinct from composition failures: `hyperframes snapshot` segfaults on exit after writing its frames (judged by files), and `hyperframes check` crashed once on screen-test in an earlier session; it passes on smoke and wasn't reproduced.
 
 ### 12. Public API (left alone)
 

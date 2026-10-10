@@ -1,6 +1,6 @@
 // WHITE ORCHARD: a tree's autumn canopy against a clear sky, moving in the
 // wind, turned into false infrared: the leaves pale and luminous, the sky
-// black. Phase 5 of the visual expansion (KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
+// black. Phase 5 of the visual expansion (docs/briefs/KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
 //
 // The source is ordinary daylight footage (Appleton Farms, Massachusetts),
 // extracted offline to assets/canopy/c%03d.jpg at 24 fps (see the index),

@@ -1,6 +1,6 @@
 // THE STAIRWELL: a white plastic chair on the stairs of a cluttered house,
 // photographed with an on-camera flash from too close. Phase 1 of the
-// visual expansion (KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
+// visual expansion (docs/briefs/KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
 //
 // Neither plate is a flash photograph. The stairwell is lit by a curtained
 // window; the chair stands in a garden in soft evening sun. The flash is

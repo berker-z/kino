@@ -38,7 +38,9 @@ src/            the library, bundled to window.Kino
   passes/       screenPass (WebGL), risoPass, ditherPass
   looks/        cyanotype, blueprint, phosphor, riso, ...
 scripts/        build, plus Python for spectrum, raw samples and dithering footage
-compositions/   each one a standalone HyperFrames project
+compositions/   pieces, each one a standalone HyperFrames project
+lab/            rigs for tuning passes, and the smoke test
+attic/          retired first-era compositions
 research/       teardowns of other people's videos, and experiments
 tools/dither/   a playground for the dither settings
 ```
@@ -60,7 +62,7 @@ The music and its analysis aren't in the repo, so most compositions won't render
 
 ## Status
 
-A personal, evolving library rather than a published package: there's nothing on npm, and it changes as the pieces built with it need. The canvas looks are where the work is. The `dom/` pieces (GSAP on HTML elements) are from the first round and still work, but nothing new uses them.
+A personal, evolving library rather than a published package: there's nothing on npm, and it changes as the pieces built with it need. The canvas looks are where the work is. The `dom/` pieces (GSAP on HTML elements) are from the first round and still work, but only the compositions in `attic/` use them.
 
 ## License
 

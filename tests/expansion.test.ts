@@ -1,4 +1,4 @@
-// The pure halves of the 2026-10-09 visual expansion (KINO_VISUAL_EXPANSION_MASTER_SPEC.md):
+// The pure halves of the 2026-10-09 visual expansion (docs/briefs/KINO_VISUAL_EXPANSION_MASTER_SPEC.md):
 // shutter sample timing and weights, copier generations, ... The canvas and WebGL halves are
 // checked in a browser by tests/browser/ (npm run test:browser).
 

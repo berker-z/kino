@@ -106,6 +106,6 @@ Render with `--quality delivery` in the background (a WebGL pass in SwiftShader 
 - `research/nouscon/index.html`, `cut.sh`: the report and the clip script.
 - `research/nouscon/compare.html`: the drag-split page.
 - `src/passes/screen-pass.ts`: the look, with ripple and lens distortions driven by `tune(t)`.
-- `compositions/cyanotype-lab`: the lab.
+- `lab/cyanotype-lab`: the lab.
 - `compositions/screen-test`: the proof piece.
 - `scripts/measure.py`, `scripts/round.sh` (in this skill folder): the measurement and lab-round helpers.

@@ -26,7 +26,7 @@ npm test --silent > /dev/null 2>&1 || fail=1
 step "build"; npm run -s build || fail=1
 
 step "hyperframes check (smoke)"
-if (cd compositions/smoke && env -u WAYLAND_DISPLAY hyperframes check > "$out/check.log" 2>&1); then
+if (cd lab/smoke && env -u WAYLAND_DISPLAY hyperframes check > "$out/check.log" 2>&1); then
   echo "check passed"
 else
   echo "check FAILED (exit $?): see $out/check.log"
@@ -35,7 +35,7 @@ else
 fi
 
 step "snapshot (smoke)"
-(cd compositions/smoke && env -u WAYLAND_DISPLAY timeout 300 hyperframes snapshot --at 0.5,1.5,2.5,3.5 --output "$out/frames" > "$out/snapshot.log" 2>&1) || true
+(cd lab/smoke && env -u WAYLAND_DISPLAY timeout 300 hyperframes snapshot --at 0.5,1.5,2.5,3.5 --output "$out/frames" > "$out/snapshot.log" 2>&1) || true
 n=$(ls "$out/frames"/frame-0[0-3]-*.png 2>/dev/null | wc -l)
 echo "$n of 4 frames written"
 [ "$n" -eq 4 ] || fail=1

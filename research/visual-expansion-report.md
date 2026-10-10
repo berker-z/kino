@@ -1,6 +1,6 @@
 # Visual expansion: six operations
 
-Built from `KINO_VISUAL_EXPANSION_MASTER_SPEC.md` on 2026-10-09, starting at `61c5e53`. The browsable version, with films, stills and A/B rows, is `examples/expansion/index.html`. This is the written summary the brief asks for.
+Built from `docs/briefs/KINO_VISUAL_EXPANSION_MASTER_SPEC.md` on 2026-10-09, starting at `61c5e53`. The browsable version, with films, stills and A/B rows, is `examples/expansion/index.html`. This is the written summary the brief asks for.
 
 Every film is 12 s at 2560×1440, 24 fps, rendered on this machine with headless Chrome on SwiftShader (CPU WebGL). Render times are that, not a GPU.
 

@@ -2,7 +2,7 @@
 
 `filmPass(stage, timeline, {width, height, duration, fps, paint, ...settings})` makes a picture look exposed on black-and-white film and printed. It's a WebGL pass in the same shape as `screenPass`: one RGB canvas painted over black per frame, one GL canvas out.
 
-It does little on purpose. In order: gate weave, exposure in stops, halation, a toe and an S-curve, optional split toning, vignette, grain. Dust, scratches, misregistration and emulsion simulation are left out until the basic exposure look has earned more (see the brief, `KINO_NEXT_VISUAL_LANGUAGES.md`).
+It does little on purpose. In order: gate weave, exposure in stops, halation, a toe and an S-curve, optional split toning, vignette, grain. Dust, scratches, misregistration and emulsion simulation are left out until the basic exposure look has earned more (see the brief, `docs/briefs/KINO_NEXT_VISUAL_LANGUAGES.md`).
 
 ## Why the defaults
 

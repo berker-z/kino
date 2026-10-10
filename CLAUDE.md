@@ -1,6 +1,6 @@
 # kino
 
-A motion design library for HyperFrames: aesthetics, motion primitives, effects, painters and scenes that compositions assemble into videos. `MOTION_SYSTEM_KICKSTART.md` is the original brief. `docs/lessons.md` is what we learned since; read it before writing a primitive or a composition.
+A motion design library for HyperFrames: aesthetics, motion primitives, effects, painters and scenes that compositions assemble into videos. `docs/briefs/MOTION_SYSTEM_KICKSTART.md` is the original brief. `docs/lessons.md` is what we learned since; read it before writing a primitive or a composition.
 
 ## Arsenal (living document)
 
@@ -21,16 +21,18 @@ src/                 TypeScript library, bundled to window.Kino
   passes/            screenPass (ramp / grille / lens / colour mode), risoPass (two-ink print), ditherPass (2-4 tone ordered dither), ditherCanvas, filmPass, digicamPass, infraredPass
   looks/             MotionAesthetic bundles: cyanotype, blueprint, phosphor, riso, signalDither, ... (teletextTV is a one-off joke, not a core look)
   dom/               first-era GSAP + CSS pieces (motion, heroTitle, heroReveal, grain, crt...)
-scripts/build.mjs    bundles src/ and copies kino.js, gsap, fonts into every compositions/*/vendor/
+scripts/build.mjs    bundles src/ and copies kino.js, gsap, fonts into every {compositions,lab,attic}/*/vendor/
 scripts/spectrum.py  per-frame spectrum of an audio file -> JSON or window.<NAME> JS
 scripts/samples.py   raw waveform samples (int8, base64) -> window.<NAME> JS
 scripts/dither.py    dither a photo or footage file (same settings as ditherPass, plus FS with hysteresis)
 scripts/commons.py   fetch a composition's Commons plates (its plates.txt) and write assets/CREDITS.txt
 scripts/stills.sh    pull exact frames from a render as JPEG stills
-compositions/        each is a standalone HyperFrames project (index.html + assets/)
-research/            teardowns and experiments (reports + scripts; media/ is gitignored)
+compositions/        pieces and xp-* experiments; each is a standalone HyperFrames project (index.html + assets/)
+lab/                 rigs for tuning a pass, and smoke (the synthetic end-to-end composition)
+attic/               retired first-era compositions (hero-*, future-of-speech, playground); reference only
+research/            teardowns, experiments and audit reports (media/ is gitignored)
 tools/dither/        the dither playground: `npm run playground`, then http://127.0.0.1:8077/tools/dither/
-docs/                architecture.md, lessons.md, primitives/*.md
+docs/                architecture.md, lessons.md, arsenal.md, handoff.md, primitives/*.md, briefs/ (the specs past rounds were built from)
 examples/            rendered outputs (videos gitignored); examples/styles/index.html is the four-styles showcase
 ```
 
@@ -54,7 +56,7 @@ Compositions using screenPass need WebGL: run `env -u WAYLAND_DISPLAY hyperframe
 
 - Paint anything time-driven through `timeDriver`; GSAP callbacks don't fire during HyperFrames renders.
 - No network at render time. Everything a composition loads is in `vendor/` or `assets/`.
-- Music and its analysis stay out of git (`audio/`, `compositions/*/assets/`).
+- Music and its analysis stay out of git (`audio/`, `*/*/assets/` under compositions, lab and attic).
 - Render at the destination's exact pixel size. Berker's screen is 2560×1440; fine line art rendered at 1080p and upscaled flickers.
 - New primitives get a doc in `docs/primitives/` explaining why the defaults are what they are.
 - Don't `rm` during a session. Add paths to `cleanup.txt`; there is one cleanup pass at the end.

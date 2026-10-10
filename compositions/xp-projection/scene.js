@@ -1,6 +1,6 @@
 // SANCTUARY: an engraving projected along the stone wall of a cloister walk,
 // in perspective, between and behind its colonnettes. Phase 4 of the
-// visual expansion (KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
+// visual expansion (docs/briefs/KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
 //
 // The room is one daylight photograph (Mont-Saint-Michel's cloister),
 // brought down to a dim interior. Kino.surfaceProject throws the water onto

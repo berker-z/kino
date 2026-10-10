@@ -32,7 +32,7 @@ It mimics a camera filming a screen. The picture is graded, the screen has a gri
 - **Bloom and grain**, both small.
 - **Lens distortion** (`lensX/Y/R/K` via `tune`) bends the picture inside a circle and lights its rim. Like the fringe, it bends the picture and not the grille. There is also a ripple distortion (`rippleX/Y/Age/Amp`). It's off by default, and Berker didn't like the water-drop transition it was used for, so leave it out unless asked.
 
-The numbers in `cyanotype.texture.screen` are absolute px for a 2560×1440 render. They came out of six lab rounds against their 4K master (`compositions/cyanotype-lab`), with try B of round 6 scaled down.
+The numbers in `cyanotype.texture.screen` are absolute px for a 2560×1440 render. They came out of six lab rounds against their 4K master (`lab/cyanotype-lab`), with try B of round 6 scaled down.
 
 ## Other uses
 

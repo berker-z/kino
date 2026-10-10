@@ -25,15 +25,23 @@ The showcase page with all four styles is `examples/styles/index.html` (videos n
 
 ## 2026-10-09: three new languages
 
-Built from `KINO_NEXT_VISUAL_LANGUAGES.md`: `compositions/xp-darkroom` (THE SILENT CITY), `xp-typesetting` (THE NAME OF THE THING), `xp-temporal-scan` (AN OBJECT OUTSIDE TIME), each with an `ab/ab.html` cross-material version. New library pieces: `doubleExposure`, `filmPass`, `temporalScan`, `lineRise`, `fragmentGrid`/`drawFragments`, and `data-lines` in `htmlPlate`. Results, critique and verdict: `examples/languages/index.html`. Canvas code is now tested in a browser: `npm run test:browser`. Waiting on Berker's verdict before any `darkroom` look or more promotion.
+Built from `docs/briefs/KINO_NEXT_VISUAL_LANGUAGES.md`: `compositions/xp-darkroom` (THE SILENT CITY), `xp-typesetting` (THE NAME OF THE THING), `xp-temporal-scan` (AN OBJECT OUTSIDE TIME), each with an `ab/ab.html` cross-material version. New library pieces: `doubleExposure`, `filmPass`, `temporalScan`, `lineRise`, `fragmentGrid`/`drawFragments`, and `data-lines` in `htmlPlate`. Results, critique and verdict: `examples/languages/index.html`. Canvas code is now tested in a browser: `npm run test:browser`. Waiting on Berker's verdict before any `darkroom` look or more promotion.
 
 Later the same day: the type reveal became construction order (loved), a footage slit-scan demo (`xp-temporal-footage`), and a second darkroom piece without a figure (`xp-darkroom-elevations`, self-mattes; take one with side-by-side panels read as a layout). Then the working method changed: **`docs/arsenal.md` is the living list of moves, and the `direct` skill turns Berker's ideas into combinations from it.** Keep the arsenal updated in the same change as any new primitive, composition or verdict (rule in CLAUDE.md, AGENTS.md links to it).
 
 ## 2026-10-09 (evening): six operations
 
-Built from `KINO_VISUAL_EXPANSION_MASTER_SPEC.md`: `digicamPass` (THE STAIRWELL, `xp-digicam`), `shutterIntegrate` (AFTERIMAGE, `xp-shutter`), `copyGenerations` (THE TESTAMENT, `xp-xerox`), `surfaceProject` (SANCTUARY, `xp-projection`), `infraredPass` (WHITE ORCHARD, `xp-infrared`), `transmissionComposite` (RELIQUARY, `xp-transmission`). Each has `ab/ab.html`, a primitive doc, tests and an arsenal entry marked provisional. Results and verdict proposals: `examples/expansion/index.html` and `research/visual-expansion-report.md`. Waiting on Berker's verdicts; nothing promoted to a look. Plates come from Commons via `scripts/commons.py fetch compositions/<name>` (each has `plates.txt`); footage frames are noted in `credits-extra.txt`.
+Built from `docs/briefs/KINO_VISUAL_EXPANSION_MASTER_SPEC.md`: `digicamPass` (THE STAIRWELL, `xp-digicam`), `shutterIntegrate` (AFTERIMAGE, `xp-shutter`), `copyGenerations` (THE TESTAMENT, `xp-xerox`), `surfaceProject` (SANCTUARY, `xp-projection`), `infraredPass` (WHITE ORCHARD, `xp-infrared`), `transmissionComposite` (RELIQUARY, `xp-transmission`). Each has `ab/ab.html`, a primitive doc, tests and an arsenal entry marked provisional. Results and verdict proposals: `examples/expansion/index.html` and `research/visual-expansion-report.md`. Waiting on Berker's verdicts; nothing promoted to a look. Plates come from Commons via `scripts/commons.py fetch compositions/<name>` (each has `plates.txt`); footage frames are noted in `credits-extra.txt`.
 
 Photo note: Berker doesn't want the Kutia Kondh portrait (`portrait.jpg` in dither-lab/research) used again.
+
+## 2026-10-10: tidy, and a change of direction
+
+Kino had grown like mold; this pass gave it structure without removing any code. The specs past rounds were built from moved to `docs/briefs/`, the architecture audit to `research/architecture-audit.md`. Compositions split three ways: `compositions/` (pieces and `xp-*`), `lab/` (pass-tuning rigs and `smoke`), `attic/` (first-era hero pieces, `future-of-speech`, `playground`). `npm run build` covers all three.
+
+THE FOURTH CHAIR (`docs/briefs/KINO_THE_FOURTH_CHAIR.md`, a 45 s photoreal narrative short) was tried and was the wrong format for kino. Don't propose narrative short films.
+
+Direction from Berker: kino is for launch, product and hype videos as much as music pieces. Next is structure, not effects: tier the arsenal (core moves, materials, a shelf of narrow effects), add composition patterns (product reveal, feature breakdown, interface flythrough, launch crescendo...), then make real pieces and let what's awkward decide what gets built or culled. Variety in a piece comes from core moves (type, camera, transitions), which are unlimited; the material is usually one; shelf effects are featured moments, one or two.
 
 ## Machine notes
 
@@ -44,7 +52,7 @@ Photo note: Berker doesn't want the Kutia Kondh portrait (`portrait.jpg` in dith
 
 ## Open threads, in rough priority
 
-1. **Done 2026-10-09:** `screenPass` renders the screen once and blurs it, 2.5x faster at 1440p. See `ARCHITECTURE_AUDIT.md` for that day's whole review: the grille bug, the clock and signal fixes, tests, the smoke test, the experiments, and what's still open (teletext grille decision, teardown PROMOTE stage).
+1. **Done 2026-10-09:** `screenPass` renders the screen once and blurs it, 2.5x faster at 1440p. See `research/architecture-audit.md` for that day's whole review: the grille bug, the clock and signal fixes, tests, the smoke test, the experiments, and what's still open (teletext grille decision, teardown PROMOTE stage).
 2. **The cyanotype fine texture.** The woven speckle in the NousCon close-ups isn't reproduced; the softness blurs our beads away. Probably wants a texture applied after the blur.
 3. **Promote style-specific arrangements when reused:** the scope's mode squash and power-off, teletext's page search. Left in their compositions on purpose until a second piece needs them.
 4. **Try the mixes** in `docs/architecture.md`. Pen kit under cyanotype and a sheet camera over a teletext wall are done (`compositions/xp-*`); beam in riso and ridgelines as teletext are not.

@@ -1,6 +1,6 @@
 // THE TESTAMENT: one page, copied, and the copy copied, while the camera
 // travels over it. Phase 3 of the visual expansion
-// (KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
+// (docs/briefs/KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
 //
 // The page is set once: htmlPlate for the type, a photograph (a satellite
 // dish against the sky, for a dark photographic patch), a technical drawing

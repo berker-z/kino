@@ -87,7 +87,7 @@ A look is a curated combination of three things that are independent underneath:
 | **Motion grammar** | timing, cuts, drifts, reveals, camera behaviour | arrangement primitives (`sheetCamera`, `printRun`, `printStrip`, `tornWipe`...) chosen by the composition |
 | **Composition** | content, spatial structure, sequencing | the composition's own code |
 
-Only the material is carried by the look object today. For the DOM hero scenes the `MotionAesthetic` type also drives entrances and layout (`motion`, `layout`, `spacing`), but no canvas piece reads those fields: canvas looks get their grammar from the arrangements the composition picks. That's deliberate for now (see `ARCHITECTURE_AUDIT.md`, finding 7). A typed motion grammar gets added when code first needs to read one from a look.
+Only the material is carried by the look object today. For the DOM hero scenes the `MotionAesthetic` type also drives entrances and layout (`motion`, `layout`, `spacing`), but no canvas piece reads those fields: canvas looks get their grammar from the arrangements the composition picks. That's deliberate for now (see `research/architecture-audit.md`, finding 7). A typed motion grammar gets added when code first needs to read one from a look.
 
 The three are swappable. The `compositions/xp-*` experiments mix them across looks with no library changes: blueprint's pen drawings under the cyanotype material, once with blueprint's sheet camera and once with cyanotype's own grammar (a contact strip, a torn print, a slow push); and teletext pages under blueprint's sheet camera.
 
@@ -109,10 +109,10 @@ Kino.screenPass(stage, tl, {width, height, duration, fps, paint, ...Kino.bluepri
 `teletextTV` also exists, but it's a joke: one quick funny piece, not one of kino's visual languages. Don't build on it, recommend it, or treat it as a reference look. The teletext source is there for that piece and for experiments.
 
 ### `dom/`: the first era
-GSAP motion on HTML elements: `fade`, `slide`, `stagger`, `maskReveal`, `typewriter`, `animatedText`, `heroTitle`, `heroReveal`, and CSS effects (`grain`, `grid`, `vignette`, `crt`). They work and the hero compositions use them, but nothing since the waves has. New work happens in canvas.
+GSAP motion on HTML elements: `fade`, `slide`, `stagger`, `maskReveal`, `typewriter`, `animatedText`, `heroTitle`, `heroReveal`, and CSS effects (`grain`, `grid`, `vignette`, `crt`). They work and the hero compositions in `attic/` use them, but nothing since the waves has. New work happens in canvas.
 
-### `compositions/`: pieces
-A composition picks a look, sources, an arrangement and a song. The reference pieces: `waves-test` (spectrumFeed), `screen-test` (cyanotype), `blueprint`, `oscilloscope`, `risograph`, `teletext`. Labs (`cyanotype-lab`) are for tuning a pass against a reference.
+### `compositions/`, `lab/`, `attic/`: pieces, labs, retired work
+A composition picks a look, sources, an arrangement and a song. `compositions/` holds the pieces: the references (`waves-test` (spectrumFeed), `screen-test` (cyanotype), `blueprint`, `oscilloscope`, `risograph`, `teletext`) and the `xp-*` experiments. `lab/` holds rigs for tuning a pass (`cyanotype-lab`, `dither-lab`, `html-lab`, `riso-lab`) and `smoke`, the synthetic end-to-end test. `attic/` holds first-era work kept for reference (`hero-nord`, `hero-brutalist`, `future-of-speech`, `playground`); don't build on it. All three get `vendor/` from `npm run build`.
 
 ## Mixing
 

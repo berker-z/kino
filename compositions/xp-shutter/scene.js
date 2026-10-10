@@ -1,6 +1,6 @@
 // AFTERIMAGE: a bare bulb swinging on its cord in an empty school corridor
 // at night, photographed with the shutter held open and a flash. Phase 2
-// of the visual expansion (KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
+// of the visual expansion (docs/briefs/KINO_VISUAL_EXPANSION_MASTER_SPEC.md).
 //
 // The source is a pure function of source time, so Kino.shutterIntegrate
 // can sample it anywhere in the interval:
