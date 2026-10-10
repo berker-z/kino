@@ -4,7 +4,9 @@ A motion design library for HyperFrames: aesthetics, motion primitives, effects,
 
 ## Arsenal (living document)
 
-`docs/arsenal.md` lists every technique as a move: what it does, how it feels, what it needs, what it pairs with, what to avoid, where it's been seen, and Berker's verdicts. When Berker brings an idea, use the `direct` skill: read the arsenal, read the idea for vibe, and propose two or three combinations before building anything.
+`docs/arsenal.md` lists every technique as a move: what it does, how it feels, what it needs, what it pairs with, what to avoid, where it's been seen, and Berker's verdicts. It's tiered: **patterns** (the shape of a piece over time: product reveal, feature breakdown, launch crescendo, music piece...), **core** moves (type, camera, sources; use freely), **materials** (usually one per piece), and a **shelf** of narrow effects (one or two per piece, as featured moments). Kino is for launch, product and hype videos as much as music pieces. When Berker brings an idea, use the `direct` skill: read the arsenal, read the idea for vibe, and propose two or three combinations, each starting from a pattern, before building anything.
+
+Don't add effects on spec. Before building anything new, answer "what new kind of video does this let us make?"; the arsenal's Gaps section lists what real product pieces will probably need.
 
 Keep it true. In the same change that adds or changes a primitive, proves a new combination in a composition, or records a verdict from Berker, update the matching arsenal entry (add one if it's new, mark rejected things as rejected). `examples/arsenal/index.html` renders straight from the markdown, so there's nothing else to sync.
 
