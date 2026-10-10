@@ -74,6 +74,16 @@ Moving fine line art is where most of the time went. The short version:
 
 So for line art: draw antialiased (`ditherCanvas` `mode: "smooth"`), keep spacing and per-frame motion in whole pixels and round offsets, render at the exact size it will be shown, and prefer 60 fps when the motion is slow and continuous. `docs/primitives/spectrum-feed.md` has the full story and numbers.
 
+## Product films (CURRENT, the Copland launch, 2026-10-10)
+
+- **The storyboard is the film.** Shots as pure functions of time, played live with the music in `tools/storyboard/`; notes and changes in minutes, the render last. See `docs/storyboard.md`. The 45 s film rendered at 1080p in 20 s; the review loop is what took time, and it should.
+- **Use the product's own code.** Copland's /wired scene, bundled untouched and made seek-safe with `replay`, beat any screen recording: crisp at any scale, the real thing, and the beads move on the film's cues.
+- **Capture the UI from a copy with made-up data.** Copy the repo to a scratch dir with its own `node_modules` (a symlinked one gets written to), give it its own `.dev.vars`, seed through the API. Nothing private on screen, nothing written to the real repo. The sandbox gives each shell command its own network, so the dev server and whatever talks to it run in one command (`works/copland-launch/capture/run.sh`).
+- **Check copy against the product's docs** before it goes on screen: runtimes, leads, claims, worktrees, gates all came from Copland's daemon README and GitHub doc.
+- **Ask where it's going before rendering.** Size (Twitter and GitHub want 1080p; 2560×1440 is Berker's screen) and music (a commercial track is fine privately, not on a public post).
+- **Pixel canvases drawn into a shot should be transparent.** An opaque sub-canvas shows as a box while its shot dissolves in: the alpha is applied twice to its background.
+- **Check the render too.** Pull frames at the transitions from the MP4 (ffmpeg `-ss`); the box above showed up there first.
+
 ## Taste (Berker's verdicts so far)
 
 Split in two on purpose. The global rules have held across every look so far. The per-look notes are what worked for one material and its pace; a deliberately harsh or frantic new look shouldn't inherit them by accident.
@@ -95,6 +105,10 @@ Split in two on purpose. The global rules have held across every look so far. Th
 - Whole words and lines, wiped in on beats. Not one letter per beat.
 - Reveals need a rule you can read. Shuffled slabs assembling a word were "too random"; the same word drafted in construction order (guides, stems, bars, curves) was loved. Derive the order from the thing's own structure.
 - To prove a look, run it on new material in a short piece with music. Matching the reference's own frames convinces nobody.
+- Every shot change comes out of motion: a push carried into the next shot, a dissolve while both move, or a match on a shape. A hard cut into the lockup was "too fast and too fucking abrupt... we can't have slideshow" (CURRENT).
+- A diagram follows one rule you can say out loud. A pole with a wire of beads, git branches and little gates in one picture "has no coherence"; the same content as "left to right is time, a row is a task, the bottom line is main" read at once.
+- The logo is the exact SVG, never redrawn. Current on a vector mark is soft light in the mark's own colour; a hard yellow dash looked "very ugly and unprofessional".
+- Empty time at the end of a piece is a place to explain something, not to recut earlier shots.
 
 ### Per look
 

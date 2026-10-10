@@ -43,6 +43,19 @@ THE FOURTH CHAIR (`docs/briefs/KINO_THE_FOURTH_CHAIR.md`, a 45 s photoreal narra
 
 Direction from Berker: kino is for launch, product and hype videos as much as music pieces. Next is structure, not effects: tier the arsenal (core moves, materials, a shelf of narrow effects), add composition patterns (product reveal, feature breakdown, interface flythrough, launch crescendo...), then make real pieces and let what's awkward decide what gets built or culled. Variety in a piece comes from core moves (type, camera, transitions), which are unlimited; the material is usually one; shelf effects are featured moments, one or two.
 
+## 2026-10-10 (later): CURRENT, and storyboard first
+
+The arsenal got tiers and composition patterns (`c3877c4`), then the first product film: **CURRENT**, a 45 s launch film for Copland, in `works/copland-launch/` (gitignored; `works/` is where real productions live now). Liked ("i like it very much"). Render: `works/copland-launch/renders/current-1080p.mp4`, 1920×1080 with "A Warm Place" (1:09–1:54), private only; a public version needs a cleared track or silence, and a small encode under 10 MB for the README.
+
+What it changed about working (all written down: `docs/storyboard.md`, `docs/lessons.md` Product films, CLAUDE.md, the `direct` skill):
+
+- **Storyboard first.** The film is shots as pure functions of time; `tools/storyboard/?work=/works/<name>/` plays it live with the music. Berker reviews the real film, notes turn around in minutes, the render (20 s for this one) is the last step.
+- **The product as source.** Copland's own /wired scene code, bundled and replayed (`Kino.replay`), is the hero; the board is a capture of a local copy with made-up data (`scripts/capture.mjs`).
+- **No hard cuts** (`Kino.overlap`): push carried over, dissolve in motion, match on shape. The ending is a match: the lead pole becomes the logo.
+- **Render size is asked, not assumed.**
+
+Next: the public cut of CURRENT (track and encode), then the other two pieces from the plan (a feature demo, a music piece). Arsenal Gaps still open: screen recordings, named capture regions, placing UI on a surface, logo lockups from an SVG as a library piece.
+
 ## Machine notes
 
 - Run HyperFrames as `env -u WAYLAND_DISPLAY hyperframes …` until Home Manager is rebuilt with the dotfiles fix (commit `1e0b24c`, wraps chrome-headless-shell without `WAYLAND_DISPLAY`). Without it, WebGL is null and every pass renders black.
@@ -64,6 +77,6 @@ Direction from Berker: kino is for launch, product and hype videos as much as mu
 ## Working with Berker (also in memory)
 
 - No `rm` during a session: keep `cleanup.txt` and do one pass at the end.
-- Render at 2560×1440 (his monitor), and render in batches in the background.
+- Ask the render size before every render (his monitor is 2560×1440; Twitter and GitHub want 1080p), and render in the background.
 - Show work in the browser (`xdg-open` unsandboxed), not as lab grids to pick from.
 - Commits are his own work: no AI attribution, identity `berker-z`.

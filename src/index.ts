@@ -95,3 +95,7 @@ export {infraredPass, infraredDefaults} from "./passes/infrared-pass";
 export type {InfraredPassOptions, InfraredSettings, InfraredPainter} from "./passes/infrared-pass";
 export {transmissionComposite, transmittance} from "./arrange/transmission";
 export type {Transmission, TransmissionOptions} from "./arrange/transmission";
+export {replay} from "./arrange/replay";
+export type {Replay, ReplayOptions, Steppable} from "./arrange/replay";
+export {overlap, overlapAt} from "./arrange/overlap";
+export type {Blend, OverlapShot} from "./arrange/overlap";

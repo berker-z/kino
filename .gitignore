@@ -20,3 +20,7 @@ research/*/media/
 !/.claude/skills/
 .mcp.json
 __pycache__/
+
+# Real productions (a launch film, a client piece): their copy, captures and music
+# are theirs, not the library's. See CLAUDE.md, "Works".
+/works/

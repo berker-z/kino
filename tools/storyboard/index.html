@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storyboard</title>
+<style>
+  /* The storyboard for a kino film: the film's own shot code drawn live at
+     preview size, in sync with its music, with a card per shot. Nothing here
+     is a mockup; the render is these frames, exactly, at the chosen size.
+
+     Serve the repo root (npm run storyboard) and open
+       /tools/storyboard/?work=/works/<name>/        (add &t=12.5 to open at a time)
+
+     The work provides storyboard.json (title, scripts, audio, images, notes;
+     see docs/storyboard.md) and its scripts set window.FILM = {W, H, DURATION,
+     SHOTS, film(inputs) -> {paint(ctx, t)}}. */
+  :root { --bg: #171c26; --panel: #262b35; --line: #3b4252; --ink: #d8dee9; --bright: #eceff4; --muted: #616e88; --faint: #4c566a;
+          --blue: #81a1c1; --yellow: #ebcb8b; --red: #bf616a; --green: #a3be8c; --cyan: #88c0d0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 "JetBrains Mono", "IBM Plex Mono", monospace; }
+  .wrap { max-width: 1340px; margin: 0 auto; padding: 0 16px; }
+  header { padding: 40px 0 18px; }
+  .kicker { color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+  h1 { color: var(--bright); font-weight: 500; font-size: clamp(30px, 5vw, 56px); margin: 6px 0 8px; letter-spacing: .02em; }
+  h1 span { color: var(--muted); }
+  header p { color: #b9c0cf; max-width: 920px; margin: 0 0 6px; }
+  .facts { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 13px; margin-top: 10px; }
+  .facts b { color: var(--ink); font-weight: 400; }
+  .player { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 10px 0 12px; border-bottom: 1px solid var(--line); }
+  canvas#view { width: 100%; aspect-ratio: 16 / 9; display: block; background: #000; border: 1px solid var(--line); }
+  .controls { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+  button { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); padding: 6px 14px; cursor: pointer; }
+  button:hover { border-color: var(--blue); }
+  #time { color: var(--muted); min-width: 120px; }
+  #shotname { color: var(--yellow); }
+  .strip { position: relative; height: 64px; margin-top: 10px; cursor: pointer; touch-action: none; }
+  .strip canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .shots { display: grid; gap: 22px; padding: 28px 0 60px; }
+  .shot { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; background: var(--panel); border: 1px solid var(--line); padding: 16px; }
+  @media (max-width: 860px) { .shot { grid-template-columns: 1fr; } }
+  .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .frames canvas { width: 100%; aspect-ratio: 16 / 9; display: block; background: #000; cursor: pointer; }
+  .frames .at { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .shot h2 { margin: 0 0 2px; font-weight: 500; color: var(--bright); font-size: 22px; }
+  .shot .when { color: var(--yellow); font-size: 13px; margin-bottom: 10px; }
+  .shot dl { display: grid; grid-template-columns: 92px 1fr; gap: 6px 12px; margin: 10px 0 0; font-size: 14px; }
+  .shot dt { color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: .1em; padding-top: 3px; }
+  .shot dd { margin: 0; }
+  .open { background: var(--panel); border: 1px solid var(--line); padding: 16px 20px; margin: 0 0 60px; }
+  .open h2 { margin: 0 0 8px; font-weight: 500; color: var(--bright); font-size: 20px; }
+  .open li { margin: 0 0 6px; }
+  .err { color: var(--red); padding: 30px 0; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="kicker" id="kicker">kino · storyboard</div>
+  <h1 id="title">Storyboard</h1>
+  <div id="intro"></div>
+  <div class="facts" id="facts"></div>
+</header>
+
+<div class="player"><div class="wrap">
+  <canvas id="view" width="1280" height="720"></canvas>
+  <div class="controls">
+    <button id="play">▶ play</button>
+    <span id="time">0.00 s</span>
+    <span id="shotname"></span>
+  </div>
+  <div class="strip" id="strip"><canvas id="stripc"></canvas></div>
+</div></div>
+
+<main class="wrap">
+  <section class="shots" id="shots"></section>
+  <section class="open" id="open" hidden><h2>Open before rendering</h2><ul></ul></section>
+</main>
+<audio id="track" preload="auto"></audio>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const work = (params.get("work") || "").replace(/\/?$/, "/");
+  const main = document.querySelector("main");
+  const fail = (e) => main.insertAdjacentHTML("afterbegin", `<p class="err">Storyboard failed: ${String(e && e.stack || e).replace(/</g, "&lt;")}</p>`);
+  const loadScript = (src) => new Promise((ok, bad) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => bad(new Error("couldn't load " + src)); document.body.appendChild(s); });
+  const loadCss = (href) => new Promise((ok) => { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = href; l.onload = ok; l.onerror = ok; document.head.appendChild(l); });
+  const at = (p) => (/^(\/|https?:)/.test(p) ? p : work + p);
+
+  async function boot() {
+    if (!work || work === "/") throw new Error("no work: open ?work=/works/<name>/");
+    const sb = await (await fetch(work + "storyboard.json")).json();
+    document.title = `${sb.title}: storyboard`;
+    document.getElementById("kicker").textContent = `kino · ${work.replace(/^\/|\/$/g, "")} · storyboard`;
+    document.getElementById("title").innerHTML = `${sb.title}${sb.subtitle ? ` <span>· ${sb.subtitle}</span>` : ""}`;
+    document.getElementById("intro").innerHTML = (sb.intro || []).map((p) => `<p>${p}</p>`).join("");
+    document.getElementById("facts").innerHTML = (sb.facts || []).map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("");
+    if (sb.open?.length) { const o = document.getElementById("open"); o.hidden = false; o.querySelector("ul").innerHTML = sb.open.map((x) => `<li>${x}</li>`).join(""); }
+
+    await Promise.all((sb.fonts || []).map(loadCss));
+    await loadScript("/dist/kino.js");
+    for (const s of sb.scripts) await loadScript(at(s));
+    // The track goes in as a blob: python's http.server doesn't answer range
+    // requests, and without them Chrome can't seek an <audio>.
+    const audio = document.getElementById("track");
+    const track = sb.audio ? fetch(at(sb.audio)).then((r) => r.blob()).then((b) => { audio.src = URL.createObjectURL(b); }) : Promise.resolve();
+    const images = {};
+    await Promise.all(Object.entries(sb.images || {}).map(([k, p]) => { const i = new Image(); i.src = at(p); images[k] = i; return i.decode(); }));
+    await Promise.all((sb.fontFaces || []).map((f) => document.fonts.load(f)));
+    await track;
+    const song = sb.analysis ? window[sb.analysis] : null;
+    start(window.FILM, window.FILM.film({...images, song}), sb, audio, song);
+  }
+
+  function start(FILM, film, sb, audio, song) {
+    const {SHOTS, W} = FILM;
+    const DURATION = FILM.DURATION ?? SHOTS[SHOTS.length - 1].to;
+    let playing = false, current = 0;
+    const view = document.getElementById("view");
+    const vg = view.getContext("2d");
+    const drawAt = (g, w, t) => { g.save(); g.setTransform(w / W, 0, 0, w / W, 0, 0); film.paint(g, t); g.restore(); };
+
+    function strip() {
+      const c = document.getElementById("stripc");
+      const r = c.getBoundingClientRect();
+      c.width = r.width * devicePixelRatio; c.height = r.height * devicePixelRatio;
+      const g = c.getContext("2d");
+      const x = (t) => (t / DURATION) * c.width;
+      const colors = ["#81a1c1", "#ebcb8b", "#88c0d0", "#a3be8c", "#bf616a", "#eceff4", "#b48ead", "#d08770"];
+      SHOTS.forEach((s, i) => { const k = colors[i % colors.length]; g.fillStyle = k + "26"; g.fillRect(x(s.from), 0, x(s.to) - x(s.from), c.height); g.fillStyle = k; g.fillRect(x(s.from), 0, 2, c.height); });
+      if (song?.rms) {
+        const h = c.height, fps = song.fps || 24;
+        g.fillStyle = "#4c566a";
+        for (let i = 0; i < song.rms.length; i++) { const v = Math.min(1, song.rms[i]) * h * 0.42; g.fillRect(x(i / fps), h / 2 - v, Math.max(1, c.width / song.rms.length), v * 2); }
+        g.fillStyle = "#ebcb8b";
+        (song.sections || []).forEach((s) => g.fillRect(x(s), 0, 1, 10));
+      }
+      g.fillStyle = "#eceff4";
+      g.fillRect(x(current), 0, 2 * devicePixelRatio, c.height);
+    }
+    function show(t) {
+      current = Math.max(0, Math.min(DURATION - 0.001, t));
+      drawAt(vg, view.width, current);
+      document.getElementById("time").textContent = current.toFixed(2) + " s";
+      const s = SHOTS.find((s) => current >= s.from && current < s.to);
+      document.getElementById("shotname").textContent = s ? s.title : "";
+      strip();
+    }
+    function tick() {
+      if (!playing) return;
+      const t = audio.src ? audio.currentTime : current + 1 / 60;
+      if (t >= DURATION - 0.05) { toggle(); show(0); return; }
+      show(t);
+      requestAnimationFrame(tick);
+    }
+    function seek(t, play) { current = t; if (audio.src) audio.currentTime = t; show(t); if (play && !playing) toggle(); }
+    function toggle() {
+      playing = !playing;
+      document.getElementById("play").textContent = playing ? "❚❚ pause" : "▶ play";
+      if (playing) { if (audio.src) { audio.currentTime = current; audio.play(); } requestAnimationFrame(tick); } else audio.pause();
+    }
+
+    const root = document.getElementById("shots");
+    SHOTS.forEach((s) => {
+      const el = document.createElement("article");
+      el.className = "shot";
+      const keys = [s.from + (s.to - s.from) * 0.3, s.from + (s.to - s.from) * 0.85];
+      const n = (sb.notes || {})[s.id] || {};
+      const rows = ["camera", "sync", "why"].filter((k) => n[k]).map((k) => `<dt>${k}</dt><dd>${n[k]}</dd>`).join("");
+      el.innerHTML = `<div class="frames">${keys.map((k) => `<div><canvas width="640" height="360" data-t="${k}"></canvas><div class="at">${k.toFixed(1)} s · click to play from here</div></div>`).join("")}</div>
+        <div><h2>${s.title}</h2><div class="when">${s.from.toFixed(2)}–${s.to.toFixed(2)} s · ${(s.to - s.from).toFixed(1)} s</div>
+        <div>${s.what || ""}</div>${rows ? `<dl>${rows}</dl>` : ""}</div>`;
+      root.appendChild(el);
+      el.querySelectorAll("canvas").forEach((c) => {
+        drawAt(c.getContext("2d"), c.width, +c.dataset.t);
+        c.onclick = () => { seek(+c.dataset.t, true); window.scrollTo({top: 0, behavior: "smooth"}); };
+      });
+    });
+
+    document.getElementById("play").onclick = toggle;
+    // Click or drag the strip to scrub; playback carries on from there.
+    const stripEl = document.getElementById("strip");
+    const tAt = (e) => { const r = stripEl.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * DURATION; };
+    stripEl.onpointerdown = (e) => { stripEl.setPointerCapture(e.pointerId); seek(tAt(e), false); stripEl.onpointermove = (m) => seek(tAt(m), false); };
+    stripEl.onpointerup = () => { stripEl.onpointermove = null; };
+    addEventListener("resize", strip);
+    const q = params.get("t");
+    show(q === null ? (sb.poster ?? 0) : +q);
+  }
+
+  boot().catch(fail);
+</script>
+</body>
+</html>

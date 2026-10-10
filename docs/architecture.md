@@ -112,7 +112,7 @@ Kino.screenPass(stage, tl, {width, height, duration, fps, paint, ...Kino.bluepri
 GSAP motion on HTML elements: `fade`, `slide`, `stagger`, `maskReveal`, `typewriter`, `animatedText`, `heroTitle`, `heroReveal`, and CSS effects (`grain`, `grid`, `vignette`, `crt`). They work and the hero compositions in `attic/` use them, but nothing since the waves has. New work happens in canvas.
 
 ### `compositions/`, `lab/`, `attic/`: pieces, labs, retired work
-A composition picks a look, sources, an arrangement and a song. `compositions/` holds the pieces: the references (`waves-test` (spectrumFeed), `screen-test` (cyanotype), `blueprint`, `oscilloscope`, `risograph`, `teletext`) and the `xp-*` experiments. `lab/` holds rigs for tuning a pass (`cyanotype-lab`, `dither-lab`, `html-lab`, `riso-lab`) and `smoke`, the synthetic end-to-end test. `attic/` holds first-era work kept for reference (`hero-nord`, `hero-brutalist`, `future-of-speech`, `playground`); don't build on it. All three get `vendor/` from `npm run build`.
+A composition picks a look, sources, an arrangement and a song. `compositions/` holds the pieces: the references (`waves-test` (spectrumFeed), `screen-test` (cyanotype), `blueprint`, `oscilloscope`, `risograph`, `teletext`) and the `xp-*` experiments. `lab/` holds rigs for tuning a pass (`cyanotype-lab`, `dither-lab`, `html-lab`, `riso-lab`) and `smoke`, the synthetic end-to-end test. `attic/` holds first-era work kept for reference (`hero-nord`, `hero-brutalist`, `future-of-speech`, `playground`); don't build on it. `works/` (gitignored) holds real productions such as CURRENT, the Copland launch film. All four get `vendor/` from `npm run build`.
 
 ## Mixing
 

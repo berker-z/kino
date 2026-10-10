@@ -46,11 +46,16 @@ A. <name in three or four words>
 
 Make the options genuinely different (different materials or different central moves), and say which one you'd pick and why. Respect the global rules at the end of the arsenal: no strobes, no speckle, something moves in every shot, every reveal follows a readable rule, crisp type, palettes picked per piece, 2560×1440.
 
-## 4. Build the one he picks
+## 4. Build the one he picks, storyboard first
 
-- A new composition in `compositions/<name>/` with the usual structure (copy `hyperframes.json`, `meta.json`, `package.json` from a recent piece; the picture in `scene.js`, materials in `index.html`; variants in a subfolder, never a second root HTML with a composition id). `npm run build` after any `src/` change.
+`docs/storyboard.md` is the full loop. In short:
+
+- Where: a real production (a launch film, a piece for someone) goes in `works/<name>/` (gitignored); an experiment or a showcase piece in `compositions/<name>/`. Copy `hyperframes.json`, `meta.json`, `package.json` from a recent piece.
+- Write the film as shots, each a pure function of time, in one file that sets `window.FILM` (`works/copland-launch/shots.js` is the example), plus a `storyboard.json`. Shots stay paintable past their own range so changes can overlap (`Kino.overlap`): **no hard cuts**, every change comes out of motion.
+- If the piece is about a product: use its own rendering code where you can (`Kino.replay`), capture its UI from a copy with made-up data (`scripts/capture.mjs`), and check every line of copy against its docs.
 - Photos: Wikimedia Commons, with licence and author in `assets/CREDITS.txt`. Not the Kutia Kondh portrait.
-- Snapshot, look at the frames yourself, fix what's off, then `hyperframes check` and render. Open the video for Berker.
+- Check the storyboard yourself before Berker sees it: `?t=` frames and contact sheets across every transition and every dense moment. Then open it (`npm run storyboard`) and list what's open.
+- Iterate on his notes in the storyboard. When he says go, **ask the render size and the music question**, wire `index.html` to the same film, `hyperframes check`, render in the background, pull frames at the transitions from the MP4, and open it.
 - Report in a few lines: what you built, which moves, what to watch for, what's weak.
 
 ## 5. Update the arsenal

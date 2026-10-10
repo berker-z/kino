@@ -38,9 +38,10 @@ How a piece is structured, independent of how it looks. Any pattern can wear any
 - what: the product shown in parts before it's shown whole, so the whole lands as a payoff.
 - shape: details first (tight crops of the real UI or object, type fragments), the camera finding them one by one; a pull back to the whole on the downbeat; the name built in construction order; a slow push on the lockup to hold.
 - uses: sheet camera or slow push, construction drafting, line rise, one material (or none, for a clean product).
-- needs: the product as material (UI plates, see Gaps).
+- needs: the product as material: its own rendering code replayed (`replay`), or captured UI (`scripts/capture.mjs`).
 - avoid: showing the whole in the first second; a logo flying in.
-- status: hypothesis, no piece yet.
+- seen: CURRENT (works/copland-launch): one /wired pole huge, along the wire to the doing pole, pull back to all four, events one line of copy each.
+- status: proven (CURRENT, liked: "i like it very much").
 
 **Feature breakdown** (20–45 s)
 - what: three to five claims in a row, each one a headline and its proof.
@@ -61,9 +62,10 @@ How a piece is structured, independent of how it looks. Any pattern can wear any
 **Architecture diagram** (15–30 s)
 - what: a system drawn in front of you in the order it works: parts, then connections, then something flowing through them.
 - shape: the first node drawn and labelled; others drafted around it; connections drawn as leaders; a pulse travelling the graph once it's whole; the camera following the pulse; pull back to the full diagram.
-- uses: pen kit, network tree, construction drafting for labels, sheet camera; blueprint, cyanotype or none.
-- avoid: everything appearing at once; a reveal order without a rule.
-- status: hypothesis, no piece yet. The obvious first use is Copland's daemon and its agents.
+- uses: the product's own visual language (CURRENT drew both diagrams in /wired's pole pixels), or the pen kit; construction drafting for labels.
+- avoid: everything appearing at once; a reveal order without a rule; mixing metaphors (a pole with beads, git branches and gates in one picture read as "no coherence", rejected). One diagram, one rule you can state: "left to right is time, a row is a task, the bottom line is main".
+- seen: CURRENT twice: the loop (you, board, agent, daemon, forking to three runtimes, as a power line with current running it) and orchestration (lead, claims, worktrees, gates, merges as a time-axis diagram).
+- status: proven (CURRENT).
 
 **Typographic manifesto** (20–45 s)
 - what: a piece made of words: lines of copy, one idea at a time, the key word given a construction of its own.
@@ -77,8 +79,16 @@ How a piece is structured, independent of how it looks. Any pattern can wear any
 - what: everything the piece has shown comes back, faster, until it stops on the name.
 - shape: cuts through earlier material getting shorter with the music; density building; a sudden stop into space; the name and a date or URL set plainly; a slow push to hold.
 - uses: the piece's own shots, beatMap for cut points, construction drafting or line rise for the lockup.
-- avoid: strobing or flashes on the cuts (rule below); ending on a hard freeze.
-- status: hypothesis, no piece yet.
+- avoid: strobing or flashes on the cuts (rule below); ending on a hard freeze; cutting between earlier shots when there's nothing new to say (tried in CURRENT: read as empty space and a slideshow, and the board pan made "0 sense"). Fill the time with explanation instead, and land the end on a match.
+- status: tried and replaced in CURRENT by orchestration plus a lockup reached by a match.
+
+**Lockup by match** (the last 4–6 s)
+- what: the product's mark arrived at, not cut to: the camera pushes into a shape the film has been about until it sits exactly where the same shape stands in the logo, everything else falls away, it takes the logo's colour, and the rest of the mark draws out of it.
+- shape: a beat on the final state; a 1.3 s push to the logo's pole position and scale; a 0.4 s dissolve with the shape not moving; the wordmark wiped in, one line, the URL; light passes along the mark once; slow push; fade with the music.
+- uses: overlap (match on shape), the exact logo SVG as Path2D, wiped words, line rise.
+- avoid: an approximated logo (rejected: "its not even the same svg"); a hard-edged dash travelling on a vector mark (rejected: "very ugly and unprofessional"); soft light along the wire's own colour worked.
+- seen: CURRENT (the lead pole becomes Copland's mark: /wired's pole and LogoMark.tsx are the same rectangles).
+- status: proven (CURRENT).
 
 ## Type: core
 
@@ -143,6 +153,22 @@ Camera moves and transitions. Most pieces want more than one; something moves in
 - rectangular apertures opening, sliding and widening. Read as a layout when panels sit side by side; better as a single aperture.
 - seen: Elevations take one.
 
+**Push carried over** (`overlap`)
+- what: the outgoing camera is already pushing in; the next shot fades up mid-push on the matching thing and settles.
+- feels: one continuous move through two pictures.
+- seen: CURRENT (/wired's doing pole into the board's doing column).
+
+**Dissolve in motion** (`overlap`)
+- what: a 0.6–0.8 s dissolve while both shots move the same way.
+- avoid: dissolving between two still pictures (that's a slide change with a fade).
+- seen: CURRENT (the board drifting right as the loop drafts and pans right).
+
+**Match on shape** (`overlap`, camera solved for the handoff)
+- what: the camera moves so a shape lands exactly where the same shape stands in the next shot, then a short dissolve with the shape not moving.
+- feels: inevitable; the film is one object.
+- needs: the same shape in both shots, and the camera worked out backwards from the next shot's (`cx = x_next + (W/2 − screenX) / s`).
+- seen: CURRENT (the loop's agent pole becomes the orchestration's lead pole; the lead pole becomes the logo).
+
 ## Sources: core, things that draw
 
 What the picture is of. Sources paint grayscale (mostly) and any material finishes them.
@@ -154,6 +180,18 @@ What the picture is of. Sources paint grayscale (mostly) and any material finish
 **Footage** (offline frames, or `scripts/dither.py`)
 - extract frames with ffmpeg into `assets/`; never seek a `<video>` per frame. 1080p JPEGs, blended between frames for slow sampling.
 - seen: xp-temporal-footage, dither-lab.
+
+**Product scene, replayed** (`replay`)
+- what: the product's own animation code (bundled untouched) driven by a scripted story, made seek-safe by replaying it from zero. Crisp at any scale, honest, and the beads move when the film says.
+- feels: whatever the product feels like; it is the product.
+- needs: a scene with step and draw separable from its loop (Copland's /wired: `step(dt)`, `draw()`, `setData`). `rate(t)` speeds its own clock.
+- seen: CURRENT (/wired is the hero).
+
+**Product capture** (`scripts/capture.mjs`)
+- what: exact-size, 2x screenshots of the real UI from a local copy of the product seeded with made-up data, through headless Chrome. Nothing private on screen, the real repo never touched (copy it to a scratch dir, write nothing there).
+- pairs: a slow push or drift; a push carried over from a replayed scene.
+- avoid: a pan past the edge of the captured area.
+- seen: CURRENT (the board).
 
 **Pen** (`Kino.pen`)
 - what: lines, arcs, hatching, dimensions, callouts and labels that draw themselves.
@@ -349,7 +387,7 @@ Real, working and documented, but each fits a narrow kind of idea. Propose one o
 
 ## Gaps: what product work needs that kino doesn't have yet
 
-- **The product as a source.** Screenshots and screen recordings of a real interface as plates: crisp, at the right scale, croppable by region. Today everything assumes photos or procedural pictures.
+- **The product as a source.** Partly built for CURRENT: `replay` for the product's own animation code, `scripts/capture.mjs` for UI stills. Still missing: screen recordings (UI in motion that isn't a self-contained scene), and cropping a capture by named region instead of by hand.
 - **Placing a picture on a surface.** `surfaceProject` already solves four-corner perspective; the geometry should be usable on its own (a UI onto a device, a wall, a sheet) without the projector light model.
 - **Callouts on a UI.** A cursor, a highlight, a drawn leader to a region. The pen kit has leaders and labels; nothing aims them at a plate.
 - **A logo lockup.** Drawing or revealing a real logo (an SVG) with the same rules as construction drafting.
@@ -362,6 +400,10 @@ Don't build these on spec. Build them when a real piece hits the gap, then move 
 - No full-frame flashes, strobing or instant position kicks. Hits move the picture smoothly.
 - No random speckle in empty space.
 - Something moves in every shot; still pages with transitions read as slides.
+- No hard cuts between shots: a change comes out of motion (push carried over, dissolve in motion, match on shape).
+- A diagram follows one rule you can say out loud; mixed metaphors read as nonsense.
+- A logo is the exact SVG. Light on a vector mark is soft and in its own colour.
+- Copy about a product is checked against its docs.
 - Every reveal needs a rule you can read (construction order beat shuffled slabs).
 - Pick palettes per piece; never default to acid lime. Ice on navy is the favourite so far.
 - Render at 2560×1440.
